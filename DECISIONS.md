@@ -1,0 +1,117 @@
+# Design Decisions
+
+A log of significant technical choices, with context and trade-offs.
+New decisions get the next number; superseded ones are marked, not deleted.
+
+---
+
+## 001 - Express over NestJS
+
+**Decision:** Use Express as the HTTP framework.
+
+**Why:** Express has little abstraction, so I have to build middleware, layering, and
+dependency wiring myself and learn how they work. I already know it from MERN projects,
+which leaves my learning budget for new topics (SQL, Redis, Docker, RBAC).
+
+**Trade-off:** More boilerplate and fewer conventions than NestJS. The folder structure
+and layering are my responsibility.
+
+---
+
+## 002 - Shared-schema multi-tenancy
+
+**Decision:** One database, one schema, with an `organization_id` column on every
+tenant-owned table.
+
+**Why:** It is the simplest model to operate and the most common in SaaS products. Schema-
+per-tenant or database-per-tenant adds migration and connection-management complexity
+that isn't justified at this scale.
+
+**Rule:** The `organization_id` for a query always comes from the authenticated user's
+membership, never from the request body.
+
+**Trade-off:** Isolation depends on every query filtering correctly. Mitigations: tests
+proving Org A cannot read Org B's data, and Postgres Row-Level Security as a later
+safety net.
+
+---
+
+## 003 - ESM with NodeNext module resolution
+
+**Decision:** `"type": "module"` in `package.json`, with `module` and `moduleResolution`
+set to `NodeNext` in `tsconfig.json`.
+
+**Why:** This matches how Node actually resolves modules and is where the ecosystem is
+heading. Tools I plan to use (Vitest, tsx) are ESM-native. This replaced my initial
+CommonJS plan.
+
+**Trade-off:** Relative imports need explicit `.js` extensions (`import { app } from
+'./app.js'`), and `__dirname` is unavailable (use `import.meta.dirname`).
+
+---
+
+## 004 - Strict TypeScript and explicit `types`
+
+**Decision:** `"strict": true`, and `"types": ["node"]` set explicitly.
+
+**Why:** Strict mode catches whole classes of bugs at compile time. Newer TypeScript
+versions no longer auto-include every `@types/*` package, so listing them is required
+for Node globals to type-check.
+
+---
+
+## 005 - Validate environment variables at startup with Zod
+
+**Decision:** `src/config/env.ts` parses `process.env` with a Zod schema and exits
+immediately if validation fails. The rest of the code imports the typed `env` object and
+never reads `process.env` directly.
+
+**Why:** Fail fast with a clear message instead of crashing later with an obscure error.
+It also gives typed, coerced config (e.g. `PORT` as a number).
+
+**Trade-off:** The process exits at import time, so tests that import config need a valid
+environment (handled later with a `.env.test` file).
+
+---
+
+## 006 - Docker Compose for infrastructure only
+
+**Decision:** Postgres and Redis run in Docker Compose. The Node app runs directly on my
+machine during development.
+
+**Why:** Gives everyone identical database versions with one command, while keeping the
+edit-run-debug loop fast (no rebuilding images). A production Dockerfile comes in the
+CI/CD phase.
+
+**Trade-off:** The app itself isn't containerised yet, so "works on my machine" issues
+are possible until the Dockerfile exists.
+
+---
+
+## 007 - Separate `app.ts` and `server.ts`
+
+**Decision:** `app.ts` builds and exports the Express app. `server.ts` imports it and
+calls `listen`.
+
+**Why:** Integration tests (Supertest) can import the app without opening a network port,
+which makes tests faster and avoids port conflicts.
+
+---
+
+## 008 - `tsx` for development, `tsc` for builds
+
+**Decision:** `npm run dev` uses `tsx watch`. Production runs compiled output from
+`tsc` via `node dist/server.js`.
+
+**Why:** `tsx` gives fast reloads without a separate build step. Compiling with `tsc`
+for production means the deployed code doesn't depend on a dev-time tool.
+
+---
+
+## 009 - `.env` is local, `.env.example` is the contract
+
+**Decision:** `.env` is git-ignored and holds real secrets. `.env.example` is committed
+with placeholder values and documents every variable.
+
+**Why:** Secrets never enter version control, and a new developer can see exactly what
+to configure.

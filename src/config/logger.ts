@@ -1,3 +1,5 @@
+// redact keeps tokens out of your logs, which matters once auth exists.
+
 import pino from 'pino';
 import { env } from './env.js';
 

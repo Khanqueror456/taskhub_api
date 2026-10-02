@@ -115,3 +115,47 @@ with placeholder values and documents every variable.
 
 **Why:** Secrets never enter version control, and a new developer can see exactly what
 to configure.
+
+---
+
+## 010 - Prisma 7 with the `prisma-client` generator and the pg driver adapter
+**Decision:** Prisma for schema, migrations, and queries, using the `@prisma/adapter-pg`
+driver adapter. The client is generated into `src/generated/prisma` (git-ignored) and
+regenerated on `npm install` via `postinstall`.
+**Why:** Prisma 7 requires a driver adapter and an ESM-friendly generator, which fits my
+NodeNext setup. Output lives inside `src/` so `tsc` compiles it with the rest of the code.
+**Trade-off:** Generated code is not committed, so a fresh clone needs `npm install`
+(which triggers generation). Raw SQL via `$queryRaw` stays available for search and
+performance work.
+
+---
+
+## 011 - Errors as typed exceptions, handled in one place
+**Decision:** Services throw `AppError` (status, machine-readable code, message). A single
+error middleware formats every error as `{ error: { code, message, details, requestId } }`.
+**Why:** Consistent responses, no duplicated try/catch, and services stay independent of HTTP.
+Unknown errors return a generic 500 and are logged in full, so internals never leak.
+
+---
+
+## 012 - Request IDs and structured logging with pino
+**Decision:** `pino-http` assigns each request an ID (or reuses a valid incoming
+`x-request-id`), returns it as a header, and attaches it to every log line.
+Authorization and cookie headers are redacted.
+**Why:** One ID traces a request across logs and appears in client-facing errors, making
+debugging production issues practical.
+
+---
+
+## 013 - Validate input with Zod at the route boundary
+**Decision:** A `validate({ body, query, params })` middleware parses input before
+controllers run, replacing `req.body` etc. with typed, coerced values.
+**Why:** Controllers and services can trust their input, and every endpoint returns the
+same validation error shape.
+
+---
+
+## 014 - Graceful shutdown
+**Decision:** On SIGINT/SIGTERM the server stops accepting connections, lets in-flight
+requests finish, disconnects Prisma, then exits (forced exit after 10s).
+**Why:** Avoids dropped requests and dangling DB connections during deploys.

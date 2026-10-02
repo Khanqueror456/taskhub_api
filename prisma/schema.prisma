@@ -21,6 +21,7 @@ model User {
   name         String
   createdAt    DateTime @default(now())
   memberships  Membership[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
 }
@@ -47,4 +48,19 @@ model Membership {
   @@unique([userId, organizationId])
   @@index([organizationId])
   @@map("memberships")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  familyId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
 }

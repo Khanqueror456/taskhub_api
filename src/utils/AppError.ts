@@ -1,3 +1,5 @@
+// Services throw these. They never touch res. The error handler is the only place that turns errors into HTTP responses.
+
 export class AppError extends Error {
   constructor(
     public readonly statusCode: number,

@@ -159,3 +159,48 @@ same validation error shape.
 **Decision:** On SIGINT/SIGTERM the server stops accepting connections, lets in-flight
 requests finish, disconnects Prisma, then exits (forced exit after 10s).
 **Why:** Avoids dropped requests and dangling DB connections during deploys.
+
+---
+
+## 015 - Short-lived access JWT + rotating opaque refresh tokens
+**Decision:** Access tokens are 15-minute HS256 JWTs carrying only `sub`. Refresh tokens
+are random opaque strings (7 days), rotated on every use.
+**Why:** JWTs can't be revoked, so they must be short-lived; refresh tokens live in the DB
+so sessions can be revoked. Opaque tokens avoid pretending a second JWT adds anything.
+**Trade-off:** A deleted or banned user keeps API access until their access token expires
+(max 15 min). Acceptable here; a revocation list in Redis could close the gap later.
+
+---
+
+## 016 - Refresh token reuse detection with token families
+**Decision:** Each login creates a `familyId`. Presenting an already-revoked refresh token
+revokes every token in that family.
+**Why:** A reused token means two parties hold it, which signals theft. Killing the family
+forces re-authentication for both.
+
+---
+
+## 017 - Store refresh tokens as HMAC-SHA256 hashes
+**Decision:** Only `HMAC(JWT_REFRESH_SECRET, token)` is stored. The raw token exists only
+on the client.
+**Why:** A database leak shouldn't yield usable sessions. A fast keyed hash is sufficient
+because tokens are 384 bits of random data (unlike passwords, which need slow hashing).
+
+---
+
+## 018 - argon2id for passwords
+**Decision:** Hash passwords with the `argon2` package using its defaults (argon2id).
+**Why:** It is the current OWASP-recommended password hashing algorithm and is
+memory-hard, which makes GPU cracking expensive.
+**Rule:** Login returns the same error for unknown email and wrong password, and runs a
+dummy verify for unknown emails, to prevent account enumeration.
+
+---
+
+## 019 - Tokens returned in the JSON body; routes under /api/v1
+**Decision:** The refresh token is sent and received in JSON bodies, not cookies. All
+API routes live under `/api/v1`.
+**Why:** Simplest to test with Postman or tests, and fits a backend-only portfolio
+project. Versioning lets breaking changes ship as `/api/v2`.
+**Trade-off:** A browser client would need to store the refresh token itself; an
+httpOnly cookie would be the safer choice for a web frontend.

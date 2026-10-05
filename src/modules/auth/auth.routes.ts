@@ -10,3 +10,4 @@ authRouter.post('/register', validate({ body : registerSchema}), controller.regi
 authRouter.post('/login', validate({ body : loginSchema}), controller.login);
 authRouter.post('/refresh', validate({ body: refreshSchema}), controller.refresh);
 authRouter.post('/logout', validate({ body : refreshSchema}), controller.logout);
+authRouter.get('/me', authenticate, controller.me);

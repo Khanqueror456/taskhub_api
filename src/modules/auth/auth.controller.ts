@@ -20,6 +20,11 @@ export async function refresh(req : Request, res : Response) {
     res.json(result);
 }
 
+export async function logout(req : Request, res : Response) {
+    await authService.logout(req.body.refreshToken);
+    res.status(204).send();
+}
+
 export async function me(req : Request, res : Response) {
 
     const result = await authService.getMe(req.user!.id);

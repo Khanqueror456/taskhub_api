@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const email = z.string().trim().toLowerCase().max(255).pipe(z.email());
+export const email = z.string().trim().toLowerCase().max(255).pipe(z.email());
 
 export const registerSchema = z.object({
 

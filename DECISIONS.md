@@ -204,3 +204,45 @@ API routes live under `/api/v1`.
 project. Versioning lets breaking changes ship as `/api/v2`.
 **Trade-off:** A browser client would need to store the refresh token itself; an
 httpOnly cookie would be the safer choice for a web frontend.
+
+---
+
+## 020 - Permission-based authorization, not role checks in routes
+**Decision:** Routes declare a permission (`authorize('project:write')`). A single map
+(`rolePermissions`) defines what each role can do.
+**Why:** Changing a role's abilities is a one-line change, and routes never hard-code
+role names. The `Permission` union type turns typos into compile errors.
+
+---
+
+## 021 - Tenant context comes from a verified membership
+**Decision:** `authorize` loads the caller's membership for `:orgId` and stores it on
+`req.membership`. Controllers and services read the org id from there, never from the
+body or from the raw URL param.
+**Why:** The URL is user-controlled. Only a database-verified membership proves the user
+may act in that org. Combined with composite lookups (`userId + organizationId`), this
+prevents cross-tenant access (IDOR).
+
+---
+
+## 022 - 404 for non-members, 403 for insufficient permission
+**Decision:** If the caller isn't a member of the org, respond 404; if they are a member
+without the permission, respond 403.
+**Why:** A 403 would confirm that an organization exists. 404 reveals nothing.
+
+---
+
+## 023 - Owner is immutable through the API; members are added by email
+**Decision:** `OWNER` cannot be assigned, changed, or removed via the member endpoints.
+Members are added directly by email (the user must already exist).
+**Why:** Prevents accidental or malicious lockout and privilege escalation. A full
+invite flow (email with expiring token) is deferred to the background-jobs phase.
+**Trade-off:** Adding by email reveals to admins whether an email is registered; no
+ownership-transfer feature yet.
+
+---
+
+## 024 - Create org and owner membership in one transaction
+**Decision:** `createOrganization` wraps the org insert and the OWNER membership insert in
+`prisma.$transaction`.
+**Why:** An org with no owner would be unreachable. Both writes succeed or neither does.

@@ -44,7 +44,7 @@ orgRouter.patch(
     '/:orgId/members/:userId',
     validate({ params : memberParams, body : updateMemberSchema }),
     authorize('member:manage'),
-    c.updateOrg
+    c.updateMember
 );
 
 orgRouter.delete(

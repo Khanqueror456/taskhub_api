@@ -38,6 +38,10 @@ export async function addMember(req: Request, res: Response) {
     res.status(201).json(await service.addMember(orgId(req), req.body));
 }
 
+export async function updateMember(req: Request, res: Response) {
+  res.json(await service.updateMemberRole(orgId(req), targetUserId(req), req.body.role));
+}
+
 export async function removeMember(req: Request, res: Response) {
     await service.removeMember(orgId(req), targetUserId(req));
     res.status(204).send();

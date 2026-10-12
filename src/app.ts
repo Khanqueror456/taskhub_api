@@ -5,6 +5,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { orgRouter } from './modules/organizations/organizations.routes.js';
 
 export const app = express();
 
@@ -12,8 +13,10 @@ app.disable('x-powered-by');
 app.use(requestLogger);
 app.use(express.json({ limit : '100kb'}));
 
+// Routers
 app.use('/health', healthRouter);
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/orgs', orgRouter);
 
 // must be last
 app.use(notFound);

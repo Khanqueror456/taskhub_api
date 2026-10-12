@@ -165,5 +165,15 @@ export async function updateMemberRole(orgId : string, userId : string, role : R
 }
 
 
+export async function removeMember(orgId: string, userId: string) {
+
+    const target = await findTargetMembership(orgId, userId);
+
+    if (target.role == Role.OWNER) throw AppError.forbidden("The owner cannot be removed");
+
+    await prisma.membership.delete({ where : { id : target.id }});
+}
+
+
 
 

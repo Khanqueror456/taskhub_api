@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { AppError } from "../utils/AppError.js";
+import { Prisma } from '../generated/prisma/client.js';
 import { unknown } from "zod";
 
 export const notFound: RequestHandler = (req, _res, next) => {
@@ -10,34 +11,36 @@ export const notFound: RequestHandler = (req, _res, next) => {
 // Express recognises error handlers by their 4 arguments, so `_next` must stay
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
-export const errorHandler : ErrorRequestHandler = (err, req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
 
     let status = 500;
     let code = 'INTERNAL_ERROR';
     let message = 'Something went wrong';
     let details: unknown;
 
-    if (err instanceof AppError)
-    {
-        ({statusCode : status, code, message, details} = err);
+    if (err instanceof AppError) {
+        ({ statusCode: status, code, message, details } = err);
     }
 
-    else if (typeof err?.status === 'number' && err.status >= 400 && err.status < 500)
-    {
+    else if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+        status = 404;
+        code = 'NOT_FOUND';
+        message = 'Resource not found';
+    }
+
+    else if (typeof err?.status === 'number' && err.status >= 400 && err.status < 500) {
         status = err.status;
         code = 'BAD_REQUEST';
         message = status === 400 ? 'Malformed request' : String(err.message);
     }
 
-    if (status >= 500)
-    {
-        req.log.error({err}, 'Unhandled error');
+    if (status >= 500) {
+        req.log.error({ err }, 'Unhandled error');
     }
 
-    else
-    {
-        req.log.warn({code, status}, message);
+    else {
+        req.log.warn({ code, status }, message);
     }
 
-    res.status(status).json({error : {code, message, details, requestId : req.id}});
+    res.status(status).json({ error: { code, message, details, requestId: req.id } });
 }

@@ -46,4 +46,4 @@ projectRouter.delete(
     validate({ params : projectParams }),
     authorize('project:write'),
     c.deleteProject
-)
+);

@@ -9,7 +9,7 @@ const taskFields = z.object({
     description : z.string().trim().max(5000).nullable().optional(),
     status : z.enum(TaskStatus).optional(),
     priority : z.enum(TaskPriority).optional(),
-    assigneeid : z.uuid().nullable().optional(),
+    assigneeId : z.uuid().nullable().optional(),
     dueDate : z.coerce.date().nullable().optional(),
 });
 

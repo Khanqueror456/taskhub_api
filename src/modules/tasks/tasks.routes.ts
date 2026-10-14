@@ -46,7 +46,7 @@ taskRouter.delete('/:taskId', validate({ params : taskParams }), authorize('task
 // comments
 
 taskRouter.get(
-    '/:taskid/comments',
+    '/:taskId/comments',
     validate({ params : taskParams, query : listCommentsQuery }),
     authorize('task:read'),
     comments.listComments,

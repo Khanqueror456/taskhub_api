@@ -40,6 +40,8 @@ export async function getTask(orgId : string, taskId : string) {
 }
 
 export async function updateTask(orgId : string, taskId : string, input : UpdateTaskInput) {
+    if (input.assigneeId) await assertAssigneeInOrg(orgId, input.assigneeId);
+
     return prisma.task.update({ where : { id : taskId, organizationId : orgId }, data : input})
 }
 

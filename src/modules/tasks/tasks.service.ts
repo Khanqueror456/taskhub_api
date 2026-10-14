@@ -84,7 +84,7 @@ export async function listTasks(orgId : string, userId : string, q : ListTasksQu
     const rows = await prisma.task.findMany({
         where,
         orderBy : [primary, { id : q.order }],
-        take : q.limit +  1, // one extra row tells us whether another page exitst
+        take : q.limit +  1, // one extra row tells us whether another page exists
         ...(q.cursor ? { cursor : { id : q.cursor }, skip : 1} : {}),
     });
 

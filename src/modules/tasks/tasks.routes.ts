@@ -11,8 +11,6 @@ import {
 import { orgParams } from "../organizations/organizations.schema.js";
 import * as c from './tasks.controller.js';
 import { createTaskSchema, listTasksQuery, taskParams, updateTaskSchema } from "./tasks.schema.js";
-import { authRouter } from "../auth/auth.routes.js";
-import { listComments } from "../comments/comments.service.js";
 
 export const taskRouter = Router({ mergeParams : true});
 
@@ -27,7 +25,7 @@ taskRouter.get(
 
 taskRouter.post(
     '/',
-    validate({ params : orgParams, body : createCommentSchema}),
+    validate({ params : orgParams, body : createTaskSchema}),
     authorize('task:write'),
     c.createTask
 )

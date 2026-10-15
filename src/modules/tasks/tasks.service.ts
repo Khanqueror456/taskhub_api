@@ -4,6 +4,11 @@ import { AppError } from '../../utils/AppError.js'
 import { cursorPage } from '../../utils/pagination.js'
 import type { CreateTaskInput, ListTasksQuery, UpdateTaskInput } from './tasks.schema.js'
 
+// audit log imports
+
+import { changedFields, recordAudit, type AuditContext } from '../audit/audit.recorder.js';
+import { be } from 'zod/locales'
+
 
 async function searchTaskIds(orgId: string, term: string): Promise<string[]> {
   // Parameters are bound by Prisma's tagged template, so this is not injectable
@@ -18,8 +23,8 @@ async function searchTaskIds(orgId: string, term: string): Promise<string[]> {
 
 // A task's project and assignee must belong to the SAME organization
 
-async function assertProjectInOrg(orgId : string, projectId : string) {
-    const project = await prisma.project.findFirst({
+async function assertProjectInOrg(orgId : string, projectId : string, db : Prisma.TransactionClient = prisma) {
+    const project = await db.project.findFirst({
         where : { id : projectId, organizationId : orgId },
         select : { id : true},
     });
@@ -27,8 +32,8 @@ async function assertProjectInOrg(orgId : string, projectId : string) {
     if (!project) throw AppError.notFound('Project not found');
 }
 
-async function assertAssigneeInOrg(orgId : string, userId : string) {
-    const membership = await prisma.membership.findUnique({
+async function assertAssigneeInOrg(orgId : string, userId : string, db : Prisma.TransactionClient = prisma) {
+    const membership = await db.membership.findUnique({
         where : { userId_organizationId : { userId, organizationId : orgId } },
         select : { id : true},
     });
@@ -36,11 +41,29 @@ async function assertAssigneeInOrg(orgId : string, userId : string) {
     if (!membership) throw AppError.badRequest('Assignee must be a member of this organization');
 }
 
-export async function createTask(orgId: string, userId: string, input: CreateTaskInput) {
-  await assertProjectInOrg(orgId, input.projectId);
-  if (input.assigneeId) await assertAssigneeInOrg(orgId, input.assigneeId);
+export async function createTask(ctx : AuditContext, orgId: string, userId: string, input: CreateTaskInput) {
+//   await assertProjectInOrg(orgId, input.projectId);
+//   if (input.assigneeId) await assertAssigneeInOrg(orgId, input.assigneeId);
+//   return prisma.task.create({ data : { ...input, organizationId: orgId, createdById: userId } });
 
-  return prisma.task.create({ data : { ...input, organizationId: orgId, createdById: userId } });
+    return prisma.$transaction(async (tx) => {
+        await assertProjectInOrg(orgId, input.projectId, tx);
+        if (input.assigneeId) await assertAssigneeInOrg(orgId, input.assigneeId, tx);
+
+        const task = await tx.task.create({
+            data : {...input, organizationId: orgId, createdById : ctx.userId}
+        });
+
+        await recordAudit(tx, ctx, {
+            organizationId : orgId,
+            action : 'task.created',
+            entityType : 'task',
+            entityId : task.id,
+            after : task,
+        });
+
+        return task;
+    })
 }
 
 export async function getTask(orgId : string, taskId : string) {
@@ -50,14 +73,60 @@ export async function getTask(orgId : string, taskId : string) {
     return task;
 }
 
-export async function updateTask(orgId : string, taskId : string, input : UpdateTaskInput) {
-    if (input.assigneeId) await assertAssigneeInOrg(orgId, input.assigneeId);
+export async function updateTask(ctx :AuditContext ,orgId : string, taskId : string, input : UpdateTaskInput) {
+    // if (input.assigneeId) await assertAssigneeInOrg(orgId, input.assigneeId);
 
-    return prisma.task.update({ where : { id : taskId, organizationId : orgId }, data : input})
+    // return prisma.task.update({ where : { id : taskId, organizationId : orgId }, data : input})
+
+    return prisma.$transaction(async (tx) => {
+
+        if (input.assigneeId) await assertAssigneeInOrg(orgId, input.assigneeId, tx);
+        
+        const before = await tx.task.findFirst({
+            where : { id : taskId, organizationId : orgId},
+        });
+
+        if (!before) throw AppError.notFound('Task not found');
+
+        const after = await tx.task.update({
+            where : { id : taskId},
+            data : input,
+        });
+
+
+        const diff = changedFields(before, after);
+
+        if (diff) {
+            await recordAudit(tx, ctx, {
+                organizationId : orgId,
+                action : 'task.updated',
+                entityType : 'task',
+                entityId : taskId,
+                ...diff
+            })
+        }
+
+        return after;
+
+    });
 }
 
-export async function deleteTask(orgId : string, taskId : string) {
-    await prisma.task.delete({ where : { id : taskId, organizationId : orgId }});
+export async function deleteTask(ctx : AuditContext, orgId : string, taskId : string) {
+    // await prisma.task.delete({ where : { id : taskId, organizationId : orgId }});
+
+    await prisma.$transaction(async (tx) => {
+        const before = await tx.task.findFirst({ where : { id : taskId, organizationId : orgId }});
+        if (!before) throw AppError.notFound('Task not found');
+
+        await tx.task.delete({ where : { id : taskId, organizationId : orgId }});
+        await recordAudit(tx, ctx, {
+            organizationId : orgId,
+            action : 'task.deleted',
+            entityType : 'task',
+            entityId : taskId,
+            before, // a snapshot, so you can still see what was deleted
+        });
+    });
 }
 
 export async function listTasks(orgId : string, userId : string, q : ListTasksQuery) {

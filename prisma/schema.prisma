@@ -134,3 +134,23 @@ model Comment {
   @@index([taskId, createdAt])
   @@map("comments")
 }
+
+model AuditLog {
+  id  String  @id @default(uuid())
+  organizationId String
+  actorId String?
+  action String
+  entityType  String
+  entityId  String
+  before  Json?
+  after Json?
+  requestId String?
+  ip  String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+
+  @@index([organizationId, createdAt(sort : Desc)])
+  @@index([organizationId, entityType,  entityId])
+  @@map("audit_logs")
+}

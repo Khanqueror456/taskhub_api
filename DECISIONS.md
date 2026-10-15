@@ -246,3 +246,55 @@ ownership-transfer feature yet.
 **Decision:** `createOrganization` wraps the org insert and the OWNER membership insert in
 `prisma.$transaction`.
 **Why:** An org with no owner would be unreachable. Both writes succeed or neither does.
+
+---
+
+## 025 - Every tenant query is scoped by organizationId from the verified membership
+**Decision:** Services always filter by `organizationId` taken from `req.membership`.
+Updates and deletes use `where: { id, organizationId }`, and Prisma's `P2025` is mapped
+to a 404 in the error handler.
+**Why:** A row from another tenant is indistinguishable from a missing row, so guessing
+IDs leaks nothing. One filter, in one place, instead of check-then-act code.
+
+---
+
+## 026 - organizationId is denormalized onto tasks and comments
+**Decision:** Tasks and comments store `organizationId` directly even though it could be
+derived via project/task.
+**Why:** Every query can filter on it directly and index it, with no joins on the hot path.
+**Trade-off:** Consistency (a task's project and assignee belong to the same org) is
+enforced in the service layer. Composite foreign keys or Postgres RLS could enforce it in
+the database later.
+
+---
+
+## 027 - Offset pagination for projects, cursor pagination for tasks and comments
+**Decision:** Projects use `page`/`limit` with totals. Tasks and comments use cursor
+pagination (`take: limit + 1`, `cursor`, `skip: 1`) with an `id` tie-breaker. Max limit 100.
+**Why:** Offset suits small bounded lists; cursors stay fast and stable on large,
+changing lists. Capping `limit` prevents resource exhaustion.
+
+---
+
+## 028 - Whitelisted filtering and sorting via Zod
+**Decision:** Sort fields and filter values are Zod enums; booleans from query strings
+are parsed explicitly (not `z.coerce.boolean()`).
+**Why:** Users can only sort or filter on what I deliberately expose.
+
+---
+
+## 029 - Search: ILIKE first, then Postgres full-text search
+**Decision:** Search started as case-insensitive `contains`, then moved to a GIN
+expression index with `websearch_to_tsquery`, queried via `$queryRaw`.
+**Why/Trade-off:** FTS handles word forms and phrases and uses an index, but doesn't match
+partial words and is raw SQL. Decision was based on `EXPLAIN ANALYZE` results (see notes).
+
+---
+
+## 030 - Indexes chosen from EXPLAIN ANALYZE on 100k seeded rows
+**Decision:** Composite indexes with `organizationId` first, equality columns before the
+sort column: `(organizationId, status, createdAt DESC)`, `(organizationId, projectId)`,
+`(organizationId, assigneeId)`.
+**Why:** Measured before/after on realistic data; each index must appear in the plan of a
+query I care about. Record the timings here:
+`<before> ms -> <after> ms`.

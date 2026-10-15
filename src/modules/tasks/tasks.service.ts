@@ -5,6 +5,17 @@ import { cursorPage } from '../../utils/pagination.js'
 import type { CreateTaskInput, ListTasksQuery, UpdateTaskInput } from './tasks.schema.js'
 
 
+async function searchTaskIds(orgId: string, term: string): Promise<string[]> {
+  // Parameters are bound by Prisma's tagged template, so this is not injectable
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT id FROM tasks
+    WHERE "organizationId" = ${orgId}
+      AND to_tsvector('english', title || ' ' || coalesce(description, ''))
+          @@ websearch_to_tsquery('english', ${term})
+    LIMIT 1000`;
+  return rows.map((r) => r.id);
+}
+
 // A task's project and assignee must belong to the SAME organization
 
 async function assertProjectInOrg(orgId : string, projectId : string) {
@@ -55,14 +66,7 @@ export async function listTasks(orgId : string, userId : string, q : ListTasksQu
     if (q.dueAfter) and.push({ dueDate : { gte : q.dueAfter }});
     if (q.dueBefore) and.push({ dueDate : { lte : q.dueBefore}});
     if (q.overdue) and.push({ dueDate : { lt : new Date() }, status : { not : TaskStatus.DONE}});
-    if (q.search) {
-        and.push({
-            OR : [
-                { title : { contains : q.search, mode : 'insensitive'}},
-                {description : { contains : q.search, mode : 'insensitive'}},
-            ],
-        });
-    }
+    if (q.search) and.push({ id: { in: await searchTaskIds(orgId, q.search) } });
 
 
     const where : Prisma.TaskWhereInput = {

@@ -10,6 +10,7 @@ export type Permission =
     | 'project:write'
     | 'task:read'
     | 'task:write'
+    | 'audit:read'
 
 
 const READ: Permission[] = ['org:read', 'member:read', 'project:read', 'task:read'];
@@ -17,8 +18,8 @@ const READ: Permission[] = ['org:read', 'member:read', 'project:read', 'task:rea
 export const rolePermissions : Record<Role, readonly Permission[]> = {
     VIEWER : READ,
     MEMBER : [...READ, 'task:write'],
-    ADMIN : [...READ, 'task:write', 'project:write', 'org:update', 'member:manage'],
-    OWNER : [...READ, 'task:write', 'project:write', 'org:update', 'member:manage', 'org:delete'],
+    ADMIN : [...READ, 'task:write', 'project:write', 'org:update', 'member:manage', 'audit:read'],
+    OWNER : [...READ, 'task:write', 'project:write', 'org:update', 'member:manage', 'org:delete', 'audit:read'],
 };
 
 export function hasPermission(role : Role, permission : Permission) : boolean {

@@ -113,7 +113,9 @@ model Task {
   createdBy      User?        @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
   comments       Comment[]
 
-  @@index([organizationId])
+  @@index([organizationId, status, createdAt(sort: Desc)])
+  @@index([organizationId, projectId])
+  @@index([organizationId, assigneeId])
   @@map("tasks")
 }
 

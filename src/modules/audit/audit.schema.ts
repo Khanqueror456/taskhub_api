@@ -9,4 +9,4 @@ export const listAuditQuery = cursorQuery.extend({
     action : z.string().trim().min(1).max(50).optional(),
 });
 
-export type listAuditQuery = z.infer<typeof listAuditQuery>;
+export type ListAuditQuery = z.infer<typeof listAuditQuery>;

@@ -71,7 +71,7 @@ export async function deleteComment(
 
     // await prisma.comment.delete({ where : { id : comment.id } });
 
-    prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
 
         const before = await tx.comment.findFirst({
             where : { id : commentId, taskId, organizationId : orgId }

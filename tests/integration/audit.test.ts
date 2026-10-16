@@ -107,6 +107,9 @@ describe('audit trail', () => {
     expect((await as(alice).del(`${api}/${orgC}`)).status).toBe(204);
 
     const rows = await prisma.auditLog.findMany({ where: { organizationId: orgC } });
+    console.log('***********************');
+    console.log(rows);
+    console.log('***********************');
     expect(rows.map((r) => r.action).sort()).toEqual(['org.created', 'org.deleted']);
   });
 });

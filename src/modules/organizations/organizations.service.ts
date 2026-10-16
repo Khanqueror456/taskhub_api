@@ -91,7 +91,7 @@ export async function getOrganization(orgId: string) {
 export async function updateOrganization(ctx: AuditContext, orgId: string, name: string) {
     // return prisma.organization.update({ where : { id : orgId}, data : { name }});
 
-    return prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
 
         const before = await tx.organization.findFirst({
             where: { id: orgId }
@@ -124,7 +124,7 @@ export async function updateOrganization(ctx: AuditContext, orgId: string, name:
 export async function deleteOrganization(ctx : AuditContext, orgId: string) {
     // await prisma.organization.delete({ where : { id : orgId }}) // memberships cascade
 
-    prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
 
         const before = await tx.organization.findFirst({
             where: { id: orgId }

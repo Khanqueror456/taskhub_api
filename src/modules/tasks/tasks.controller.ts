@@ -23,6 +23,6 @@ export async function updateTask(req : Request, res : Response) {
 };
 
 export async function deleteTask(req : Request, res : Response) {
-    res.json(await service.deleteTask(auditContext(req), orgId(req), taskId(req)));
+    await service.deleteTask(auditContext(req), orgId(req), taskId(req));
     res.status(204).send();
 }

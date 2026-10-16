@@ -31,6 +31,6 @@ export async function cleanupUsers(ids : string[]) {
     await prisma.organization.deleteMany({
         where : { id : { in : memberships.map((m) => m.organizationId) } },
     });
-
+    await prisma.auditLog.deleteMany({ where: { actorId: { in: ids } } });
     await prisma.user.deleteMany({ where : { id : { in : ids } } } );
 }

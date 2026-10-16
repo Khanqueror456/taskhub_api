@@ -143,7 +143,7 @@ tests/
 - [x] Phase 2: Authentication (JWT access + refresh tokens)
 - [x] Phase 3: Organizations and RBAC
 - [x] Phase 4: Core CRUD, pagination, filtering, search
-- [ ] Phase 5: Transactions and audit logs
+- [x] Phase 5: Transactions and audit logs
 - [ ] Phase 6: Redis (rate limiting, caching)
 - [ ] Phase 7: Background jobs
 - [ ] Phase 8: Testing hardening

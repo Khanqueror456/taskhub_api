@@ -298,3 +298,52 @@ sort column: `(organizationId, status, createdAt DESC)`, `(organizationId, proje
 **Why:** Measured before/after on realistic data; each index must appear in the plan of a
 query I care about. Record the timings here:
 `<before> ms -> <after> ms`.
+
+---
+
+## 031 - Audit entries are written in the same transaction as the change
+**Decision:** Every mutating service runs `prisma.$transaction(async (tx) => ...)`, performs
+the change, then calls `recordAudit(tx, ...)`.
+**Why:** A change can't exist without its audit entry, and an entry can't describe a change
+that never happened. Verified by a test that makes the audit write fail and asserts the
+change was rolled back.
+**Trade-off:** Writes cost one extra insert and a slightly longer transaction.
+
+---
+
+## 032 - Audit logs have no foreign keys and a read-only API
+**Decision:** `audit_logs` stores `organizationId` and `actorId` as plain values. The API
+only lists entries (ADMIN and OWNER).
+**Why:** History should survive deletion of an org or user, including the `org.deleted`
+entry itself. Nothing in the API can edit or remove an entry.
+**Trade-off:** No referential integrity, and cleanup must be explicit (tests delete by actor).
+
+---
+
+## 033 - Store only changed fields, skip no-ops
+**Decision:** Updates log `{before, after}` containing only the fields that changed
+(`updatedAt` excluded). Updates that change nothing log nothing. Deletes store a full snapshot.
+**Why:** Small, readable logs that answer "what exactly changed?". Secrets such as password
+hashes are never audited, because users are not an audited entity.
+
+---
+
+## 034 - Audit context is passed explicitly
+**Decision:** Controllers build an `AuditContext` (user, request id, IP, user agent) and pass
+it as the first argument to mutating services.
+**Why:** Data flow stays visible and testable. `AsyncLocalStorage` would avoid threading the
+argument but hides a dependency.
+
+---
+
+## 035 - Interactive transactions for dependent steps
+**Decision:** Use the callback form with `tx` whenever a step depends on an earlier result.
+Use the array form for independent queries. No network calls inside transactions.
+**Why:** Keeps transactions short and makes rollback behaviour predictable.
+
+---
+
+## 036 - Removing a member unassigns their tasks atomically
+**Decision:** `removeMember` unassigns the member's tasks, deletes the membership, and
+records the audit entry in one transaction.
+**Why:** Prevents tasks assigned to someone who no longer belongs to the org.

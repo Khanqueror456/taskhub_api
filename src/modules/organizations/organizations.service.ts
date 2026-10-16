@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 import { Prisma, Role} from "../../generated/prisma/client.js";
 import { prisma } from '../../lib/prisma.js';
 import { AppError } from "../../utils/AppError.js";
-import { email } from "zod";
+import { changedFields, recordAudit, type AuditContext } from "../audit/audit.recorder.js";
+import { input } from "zod";
 
 function makeSlug(name: string) : string {
 
@@ -44,7 +45,7 @@ function toMember(m : {
 // ---------------- organizations ---------------
 
 
-export async function createOrganization(userId : string, name : string) {
+export async function createOrganization(ctx : AuditContext, userId : string, name : string) {
 
     // Both rows or netiher : an org without an owner would be unreachable
 
@@ -52,6 +53,14 @@ export async function createOrganization(userId : string, name : string) {
         const org = await tx.organization.create({ data : { name, slug : makeSlug(name)}});
         await tx.membership.create({
             data : { userId, organizationId : org.id, role : Role.OWNER},
+        });
+
+        await recordAudit(tx, ctx, {
+            organizationId : org.id,
+            action : 'org.created',
+            entityType : 'organization',
+            entityId : org.id,
+            after : org,
         });
 
         return { ...org, role : Role.OWNER};
@@ -79,12 +88,53 @@ export async function getOrganization(orgId : string) {
     return org;
 }
 
-export async function updateOrganization(orgId : string, name : string) {
-    return prisma.organization.update({ where : { id : orgId}, data : { name }});
+export async function updateOrganization(ctx : AuditContext, orgId : string, name : string) {
+    // return prisma.organization.update({ where : { id : orgId}, data : { name }});
+
+    return prisma.$transaction(async (tx) => {
+
+        const before = await tx.organization.findFirst({
+            where : {id : orgId}
+        });
+
+        if (!before) throw AppError.notFound('Organization not found');
+
+        const after = await tx.organization.update({
+            where : { id : orgId},
+            data : { name }
+        });
+
+        const diff = changedFields(before, after);
+
+        if(diff) {
+
+            await recordAudit(tx, ctx, {
+                organizationId : orgId,
+                action : 'org.updated',
+                entityType : 'organization',
+                entityId : orgId,
+                ...diff
+            })
+        }
+
+        return after;
+    })
 }
 
 export async function deleteOrganization(orgId : string) {
-    await prisma.organization.delete({ where : { id : orgId }}) // memberships cascade
+    // await prisma.organization.delete({ where : { id : orgId }}) // memberships cascade
+
+    prisma.$transaction(async (tx) => {
+
+        const before = await tx.organization.findFirst({
+            where : {id : orgId}
+        });
+
+        if (!before) throw AppError.notFound('Organization not found');
+
+        await tx.organization.delete({ where : { id : orgId }})
+    })
+
 }
 
 
@@ -104,7 +154,7 @@ export async function listMembers(orgId : string) {
 
 
 
-export async function addMember(orgId : string, input : { email : string, role : Role}) {
+export async function addMember(ctx : AuditContext, orgId : string, input : { email : string, role : Role}) {
 
     const user = await prisma.user.findUnique({
         where : { email : input.email},
@@ -114,13 +164,30 @@ export async function addMember(orgId : string, input : { email : string, role :
     if (!user) throw AppError.notFound('No registered user with that email');
 
     try {
+        // `return await` matters: without `await`, a rejection would skip the catch below
+        // const created = await prisma.membership.create({
+        //     data : { userId : user.id, organizationId : orgId, role : input.role },
+        //     select : memberSelect
+        // });
 
-        const created = await prisma.membership.create({
-            data : { userId : user.id, organizationId : orgId, role : input.role },
-            select : memberSelect
-        });
+        // return toMember(created);
 
-        return toMember(created);
+            return await prisma.$transaction(async (tx) => {
+                const created = await tx.membership.create({
+                    data : { userId : user.id, organizationId : orgId, role : input.role },
+                    select : memberSelect
+                });
+
+                await recordAudit(tx, ctx, {
+                    organizationId : orgId,
+                    action : 'member.added',
+                    entityType : 'member',
+                    entityId : user.id,
+                    after : { email : input.email, role : input.role }
+                });
+
+                return toMember(created);
+            });
         
     } catch (err) {
 
@@ -137,11 +204,11 @@ export async function addMember(orgId : string, input : { email : string, role :
 
 
 
-async function findTargetMembership(orgId : string, userId : string) {
+async function findTargetMembership(orgId : string, userId : string, db : Prisma.TransactionClient = prisma) {
 
-    // Scoped by BOTH ids, so and ID from another org can never match
+    // Scoped by BOTH ids, so an ID from another org can never match
 
-    const target = await prisma.membership.findUnique({
+    const target = await db.membership.findUnique({
         where : { userId_organizationId : { userId, organizationId : orgId }},
     });
 
@@ -149,29 +216,76 @@ async function findTargetMembership(orgId : string, userId : string) {
     return target;
 }
 
-export async function updateMemberRole(orgId : string, userId : string, role : Role) {
+export async function updateMemberRole(ctx : AuditContext, orgId : string, userId : string, role : Role) {
 
-    const target = await findTargetMembership(orgId, userId);
+    // const target = await findTargetMembership(orgId, userId);
 
-    if (target.role === Role.OWNER) throw AppError.forbidden("The owner's role cannot be changed");
+    // if (target.role === Role.OWNER) throw AppError.forbidden("The owner's role cannot be changed");
 
-    const updated = await prisma.membership.update({
-        where : { id : target.id },
-        data : { role },
-        select : memberSelect
-    });
+    // const updated = await prisma.membership.update({
+    //     where : { id : target.id },
+    //     data : { role },
+    //     select : memberSelect
+    // });
 
-    return toMember(updated);
+    // return toMember(updated);
+
+    return prisma.$transaction(async (tx) => {
+
+        const target = await findTargetMembership(orgId, userId, tx);
+
+        if (target.role === Role.OWNER) throw AppError.forbidden("The owner's role cannot be changed");
+
+        const updated = await tx.membership.update({
+            where : { id : target.id },
+            data : { role },
+            select : memberSelect
+        });
+
+        if (target.role !== role) {
+            await recordAudit(tx, ctx, {
+                organizationId : orgId,
+                action : 'member.role_changed',
+                entityType : 'member',
+                entityId : userId,
+                before : { role : target.role },
+                after : { role }
+            });
+
+            return toMember(updated);
+        }
+    })
 }
 
 
-export async function removeMember(orgId: string, userId: string) {
+export async function removeMember(ctx : AuditContext, orgId: string, userId: string) {
 
-    const target = await findTargetMembership(orgId, userId);
+    // const target = await findTargetMembership(orgId, userId);
 
-    if (target.role == Role.OWNER) throw AppError.forbidden("The owner cannot be removed");
+    // if (target.role == Role.OWNER) throw AppError.forbidden("The owner cannot be removed");
 
-    await prisma.membership.delete({ where : { id : target.id }});
+    // await prisma.membership.delete({ where : { id : target.id }});
+
+    return prisma.$transaction(async (tx) => {
+        const target = await findTargetMembership(orgId, userId, tx);
+
+        if (target.role === Role.OWNER) throw AppError.forbidden("The owner cannot be removed");
+
+        const { count } = await tx.task.updateMany({
+            where : { organizationId : orgId, assigneeId : userId },
+            data : { assigneeId : null }
+        });
+
+        await tx.membership.delete({ where : { id : target.id }});
+        await recordAudit(tx, ctx, {
+            organizationId : orgId,
+            action : 'member.removed',
+            entityType : 'member',
+            entityId : userId,
+            before : { role : target.role },
+            after : { unassignedTasks : count },
+        });
+    });
 }
 
 

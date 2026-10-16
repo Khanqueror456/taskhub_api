@@ -1,5 +1,6 @@
 import { Request, Response} from 'express';
 import * as service from './organizations.service.js';
+import { auditContext } from '../audit/audit.recorder.js';
 
 // the org id comes from the VERIFIED membership set by 'authorize;
 const orgId = (req: Request) => req.membership!.organizationId;
@@ -7,7 +8,7 @@ const targetUserId = (req: Request) => req.params.userId as string;
 
 export async function createOrg(req: Request, res: Response) {
 
-    res.status(201).json(await service.createOrganization(req.user!.id, req.body.name));
+    res.status(201).json(await service.createOrganization(auditContext(req), req.user!.id, req.body.name));
 }
 
 export async function listMyOrgs(req: Request, res: Response) {
@@ -22,11 +23,11 @@ export async function getOrg(req: Request, res: Response) {
 
 
 export async function updateOrg(req: Request, res: Response) {
-    res.json(await service.updateOrganization(orgId(req), req.body.name));
+    res.json(await service.updateOrganization(auditContext(req), orgId(req), req.body.name));
 }
 
 export async function deleteOrg(req: Request, res: Response) {
-    await service.deleteOrganization(orgId(req));
+    await service.deleteOrganization(auditContext(req), orgId(req));
     res.status(204).send();
 }
 
@@ -35,14 +36,14 @@ export async function lsitMembers(req: Request, res: Response) {
 }
 
 export async function addMember(req: Request, res: Response) {
-    res.status(201).json(await service.addMember(orgId(req), req.body));
+    res.status(201).json(await service.addMember(auditContext(req), orgId(req), req.body));
 }
 
 export async function updateMember(req: Request, res: Response) {
-  res.json(await service.updateMemberRole(orgId(req), targetUserId(req), req.body.role));
+  res.json(await service.updateMemberRole(auditContext(req), orgId(req), targetUserId(req), req.body.role));
 }
 
 export async function removeMember(req: Request, res: Response) {
-    await service.removeMember(orgId(req), targetUserId(req));
+    await service.removeMember(auditContext(req), orgId(req), targetUserId(req));
     res.status(204).send();
 }

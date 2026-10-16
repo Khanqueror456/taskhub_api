@@ -1,18 +1,18 @@
 import { randomBytes } from "node:crypto";
-import { Prisma, Role} from "../../generated/prisma/client.js";
+import { Prisma, Role } from "../../generated/prisma/client.js";
 import { prisma } from '../../lib/prisma.js';
 import { AppError } from "../../utils/AppError.js";
 import { changedFields, recordAudit, type AuditContext } from "../audit/audit.recorder.js";
 import { input } from "zod";
 
-function makeSlug(name: string) : string {
+function makeSlug(name: string): string {
 
-    const base = 
-    name
-        .toLowerCase()
-        .normalize('NFKD')
-        .replace(/[^a-z0-9]+/g, '-')
-        .slice(0, 40) || 'org';
+    const base =
+        name
+            .toLowerCase()
+            .normalize('NFKD')
+            .replace(/[^a-z0-9]+/g, '-')
+            .slice(0, 40) || 'org';
 
     return `${base}-${randomBytes(3).toString('hex')}`;
 }
@@ -20,24 +20,24 @@ function makeSlug(name: string) : string {
 
 const memberSelect = {
 
-    role : true,
-    createdAt : true,
-    user : { select : { id : true, email : true, name : true }}
+    role: true,
+    createdAt: true,
+    user: { select: { id: true, email: true, name: true } }
 } as const;
 
-function toMember(m : {
-    role : Role;
-    createdAt : Date;
-    user : { id : string; email : string; name : string};
+function toMember(m: {
+    role: Role;
+    createdAt: Date;
+    user: { id: string; email: string; name: string };
 }) {
 
     return {
 
-        userId : m.user.id,
-        email : m.user.email,
-        name : m.user.name,
-        role : m.role,
-        joinedAt : m.createdAt
+        userId: m.user.id,
+        email: m.user.email,
+        name: m.user.name,
+        role: m.role,
+        joinedAt: m.createdAt
     };
 }
 
@@ -45,74 +45,74 @@ function toMember(m : {
 // ---------------- organizations ---------------
 
 
-export async function createOrganization(ctx : AuditContext, userId : string, name : string) {
+export async function createOrganization(ctx: AuditContext, userId: string, name: string) {
 
     // Both rows or netiher : an org without an owner would be unreachable
 
     return prisma.$transaction(async (tx) => {
-        const org = await tx.organization.create({ data : { name, slug : makeSlug(name)}});
+        const org = await tx.organization.create({ data: { name, slug: makeSlug(name) } });
         await tx.membership.create({
-            data : { userId, organizationId : org.id, role : Role.OWNER},
+            data: { userId, organizationId: org.id, role: Role.OWNER },
         });
 
         await recordAudit(tx, ctx, {
-            organizationId : org.id,
-            action : 'org.created',
-            entityType : 'organization',
-            entityId : org.id,
-            after : org,
+            organizationId: org.id,
+            action: 'org.created',
+            entityType: 'organization',
+            entityId: org.id,
+            after: org,
         });
 
-        return { ...org, role : Role.OWNER};
+        return { ...org, role: Role.OWNER };
     });
 }
 
 
-export async function listMyOrganizations(userId : string) {
+export async function listMyOrganizations(userId: string) {
 
     const memberships = await prisma.membership.findMany({
-        where : { userId },
-        include : { organization : true},
-        orderBy : { createdAt : 'desc'},
+        where: { userId },
+        include: { organization: true },
+        orderBy: { createdAt: 'desc' },
     });
 
-    return memberships.map((m) => ({ ...m.organization, role : m.role}));
+    return memberships.map((m) => ({ ...m.organization, role: m.role }));
 }
 
 
-export async function getOrganization(orgId : string) {
+export async function getOrganization(orgId: string) {
 
-    const org = await prisma.organization.findUnique({ where : { id : orgId}});
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
 
     if (!org) throw AppError.notFound('Organization not found');
     return org;
 }
 
-export async function updateOrganization(ctx : AuditContext, orgId : string, name : string) {
+export async function updateOrganization(ctx: AuditContext, orgId: string, name: string) {
     // return prisma.organization.update({ where : { id : orgId}, data : { name }});
 
     return prisma.$transaction(async (tx) => {
 
         const before = await tx.organization.findFirst({
-            where : {id : orgId}
+            where: { id: orgId }
         });
 
         if (!before) throw AppError.notFound('Organization not found');
 
         const after = await tx.organization.update({
-            where : { id : orgId},
-            data : { name }
+            where: { id: orgId },
+            data: { name }
         });
 
         const diff = changedFields(before, after);
 
-        if(diff) {
+        if (diff) {
 
             await recordAudit(tx, ctx, {
-                organizationId : orgId,
-                action : 'org.updated',
-                entityType : 'organization',
-                entityId : orgId,
+                organizationId: orgId,
+                action: 'org.updated',
+                entityType: 'organization',
+                entityId: orgId,
                 ...diff
             })
         }
@@ -121,18 +121,26 @@ export async function updateOrganization(ctx : AuditContext, orgId : string, nam
     })
 }
 
-export async function deleteOrganization(orgId : string) {
+export async function deleteOrganization(ctx : AuditContext, orgId: string) {
     // await prisma.organization.delete({ where : { id : orgId }}) // memberships cascade
 
     prisma.$transaction(async (tx) => {
 
         const before = await tx.organization.findFirst({
-            where : {id : orgId}
+            where: { id: orgId }
         });
 
         if (!before) throw AppError.notFound('Organization not found');
 
-        await tx.organization.delete({ where : { id : orgId }})
+        await tx.organization.delete({ where: { id: orgId } });
+
+        await recordAudit(tx, ctx, {
+            organizationId: orgId,
+            action: 'org.deleted',
+            entityType: 'organization',
+            entityId: orgId,
+            before,
+        });
     })
 
 }
@@ -141,12 +149,12 @@ export async function deleteOrganization(orgId : string) {
 // ---------------- members -----------------
 
 
-export async function listMembers(orgId : string) {
+export async function listMembers(orgId: string) {
 
     const members = await prisma.membership.findMany({
-        where : { organizationId : orgId },
-        select : memberSelect,
-        orderBy : { createdAt : 'asc'}
+        where: { organizationId: orgId },
+        select: memberSelect,
+        orderBy: { createdAt: 'asc' }
     })
 
     return members.map(toMember);
@@ -154,11 +162,11 @@ export async function listMembers(orgId : string) {
 
 
 
-export async function addMember(ctx : AuditContext, orgId : string, input : { email : string, role : Role}) {
+export async function addMember(ctx: AuditContext, orgId: string, input: { email: string, role: Role }) {
 
     const user = await prisma.user.findUnique({
-        where : { email : input.email},
-        select : { id : true}
+        where: { email: input.email },
+        select: { id: true }
     });
 
     if (!user) throw AppError.notFound('No registered user with that email');
@@ -172,51 +180,50 @@ export async function addMember(ctx : AuditContext, orgId : string, input : { em
 
         // return toMember(created);
 
-            return await prisma.$transaction(async (tx) => {
-                const created = await tx.membership.create({
-                    data : { userId : user.id, organizationId : orgId, role : input.role },
-                    select : memberSelect
-                });
-
-                await recordAudit(tx, ctx, {
-                    organizationId : orgId,
-                    action : 'member.added',
-                    entityType : 'member',
-                    entityId : user.id,
-                    after : { email : input.email, role : input.role }
-                });
-
-                return toMember(created);
+        return await prisma.$transaction(async (tx) => {
+            const created = await tx.membership.create({
+                data: { userId: user.id, organizationId: orgId, role: input.role },
+                select: memberSelect
             });
-        
+
+            await recordAudit(tx, ctx, {
+                organizationId: orgId,
+                action: 'member.added',
+                entityType: 'member',
+                entityId: user.id,
+                after: { email: input.email, role: input.role }
+            });
+
+            return toMember(created);
+        });
+
     } catch (err) {
 
-        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')
-        {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
             throw AppError.conflict('User is already a member of this organization');
         }
 
         throw err;
-        
+
     }
 }
 
 
 
 
-async function findTargetMembership(orgId : string, userId : string, db : Prisma.TransactionClient = prisma) {
+async function findTargetMembership(orgId: string, userId: string, db: Prisma.TransactionClient = prisma) {
 
     // Scoped by BOTH ids, so an ID from another org can never match
 
     const target = await db.membership.findUnique({
-        where : { userId_organizationId : { userId, organizationId : orgId }},
+        where: { userId_organizationId: { userId, organizationId: orgId } },
     });
 
     if (!target) throw AppError.notFound('Member not found');
     return target;
 }
 
-export async function updateMemberRole(ctx : AuditContext, orgId : string, userId : string, role : Role) {
+export async function updateMemberRole(ctx: AuditContext, orgId: string, userId: string, role: Role) {
 
     // const target = await findTargetMembership(orgId, userId);
 
@@ -237,19 +244,19 @@ export async function updateMemberRole(ctx : AuditContext, orgId : string, userI
         if (target.role === Role.OWNER) throw AppError.forbidden("The owner's role cannot be changed");
 
         const updated = await tx.membership.update({
-            where : { id : target.id },
-            data : { role },
-            select : memberSelect
+            where: { id: target.id },
+            data: { role },
+            select: memberSelect
         });
 
         if (target.role !== role) {
             await recordAudit(tx, ctx, {
-                organizationId : orgId,
-                action : 'member.role_changed',
-                entityType : 'member',
-                entityId : userId,
-                before : { role : target.role },
-                after : { role }
+                organizationId: orgId,
+                action: 'member.role_changed',
+                entityType: 'member',
+                entityId: userId,
+                before: { role: target.role },
+                after: { role }
             });
 
             return toMember(updated);
@@ -258,7 +265,7 @@ export async function updateMemberRole(ctx : AuditContext, orgId : string, userI
 }
 
 
-export async function removeMember(ctx : AuditContext, orgId: string, userId: string) {
+export async function removeMember(ctx: AuditContext, orgId: string, userId: string) {
 
     // const target = await findTargetMembership(orgId, userId);
 
@@ -272,18 +279,18 @@ export async function removeMember(ctx : AuditContext, orgId: string, userId: st
         if (target.role === Role.OWNER) throw AppError.forbidden("The owner cannot be removed");
 
         const { count } = await tx.task.updateMany({
-            where : { organizationId : orgId, assigneeId : userId },
-            data : { assigneeId : null }
+            where: { organizationId: orgId, assigneeId: userId },
+            data: { assigneeId: null }
         });
 
-        await tx.membership.delete({ where : { id : target.id }});
+        await tx.membership.delete({ where: { id: target.id } });
         await recordAudit(tx, ctx, {
-            organizationId : orgId,
-            action : 'member.removed',
-            entityType : 'member',
-            entityId : userId,
-            before : { role : target.role },
-            after : { unassignedTasks : count },
+            organizationId: orgId,
+            action: 'member.removed',
+            entityType: 'member',
+            entityId: userId,
+            before: { role: target.role },
+            after: { unassignedTasks: count },
         });
     });
 }

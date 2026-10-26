@@ -26,4 +26,8 @@ export class AppError extends Error {
   static conflict(message: string) {
     return new AppError(409, 'CONFLICT', message);
   }
+
+  static tooManyRequests(message = "Too many requests, please try again later") {
+    return new AppError(429, "RATE_LIMITED", message);
+  }
 }

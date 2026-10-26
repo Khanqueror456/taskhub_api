@@ -9,8 +9,11 @@ import { orgRouter } from './modules/organizations/organizations.routes.js';
 import { projectRouter } from './modules/projects/projects.routes.js';
 import { taskRouter } from './modules/tasks/tasks.routes.js';
 import { auditRouter } from './modules/audit/audit.routes.js';
+import { env } from './config/env.js';
 
 export const app = express();
+
+app.set('trust proxy', env.TRUST_PROXY_HOPS)
 
 app.disable('x-powered-by');
 app.use(requestLogger);

@@ -12,10 +12,11 @@ import {
     updateMemberSchema,
     updateOrgSchema
 } from './organizations.schema.js'
+import { apiLimiter } from "../../middleware/limiters.js";
 
 export const orgRouter = Router();
 
-orgRouter.use(authenticate); // every org route requries login
+orgRouter.use(authenticate, apiLimiter); // every org route requries login
 
 orgRouter.post('/', validate({ body : createOrgSchema }), c.createOrg);
 orgRouter.get('/', c.listMyOrgs);

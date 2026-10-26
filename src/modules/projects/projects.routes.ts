@@ -9,14 +9,15 @@ import {
     listProjectsQuery,
     projectParams,
     updateProjectSchema
-} from './projects.schema.js'
-import { createProject } from "./projects.service.js";
+} from './projects.schema.js';
+
+import { apiLimiter } from "../../middleware/limiters.js";
 
 
 // mergeParams lets this router see : orgId from the mount path in app.ts
 export const projectRouter = Router({ mergeParams : true });
 
-projectRouter.use(authenticate);
+projectRouter.use(authenticate, apiLimiter);
 
 projectRouter.get(
     '/',

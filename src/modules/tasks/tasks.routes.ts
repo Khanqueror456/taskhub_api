@@ -11,10 +11,11 @@ import {
 import { orgParams } from "../organizations/organizations.schema.js";
 import * as c from './tasks.controller.js';
 import { createTaskSchema, listTasksQuery, taskParams, updateTaskSchema } from "./tasks.schema.js";
+import { apiLimiter } from "../../middleware/limiters.js";
 
 export const taskRouter = Router({ mergeParams : true});
 
-taskRouter.use(authenticate);
+taskRouter.use(authenticate, apiLimiter);
 
 taskRouter.get(
     '/',

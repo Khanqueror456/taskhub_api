@@ -5,11 +5,11 @@ import { validate } from "../../middleware/validate.js";
 import { orgParams } from "../organizations/organizations.schema.js";
 import { listAuditLogs } from "./audit.controller.js";
 import { listAuditQuery } from "./audit.schema.js";
-
+import { apiLimiter } from "../../middleware/limiters.js";
 
 export const auditRouter = Router({ mergeParams : true });
 
-auditRouter.use(authenticate);
+auditRouter.use(authenticate, apiLimiter);
 
 auditRouter.get(
     '/',

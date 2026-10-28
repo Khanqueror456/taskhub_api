@@ -3,7 +3,7 @@ import { Prisma, Role } from "../../generated/prisma/client.js";
 import { prisma } from '../../lib/prisma.js';
 import { AppError } from "../../utils/AppError.js";
 import { changedFields, recordAudit, type AuditContext } from "../audit/audit.recorder.js";
-import { input } from "zod";
+import { invalidateMemberships } from "../rbac/membershipCache.js";
 
 function makeSlug(name: string): string {
 
@@ -124,13 +124,18 @@ export async function updateOrganization(ctx: AuditContext, orgId: string, name:
 export async function deleteOrganization(ctx : AuditContext, orgId: string) {
     // await prisma.organization.delete({ where : { id : orgId }}) // memberships cascade
 
-    await prisma.$transaction(async (tx) => {
+    const userIds = await prisma.$transaction(async (tx) => {
 
         const before = await tx.organization.findFirst({
             where: { id: orgId }
         });
 
         if (!before) throw AppError.notFound('Organization not found');
+
+        const members = await tx.membership.findMany({
+            where : { organizationId : orgId},
+            select : { userId : true},
+        });
 
         await tx.organization.delete({ where: { id: orgId } });
 
@@ -141,7 +146,11 @@ export async function deleteOrganization(ctx : AuditContext, orgId: string) {
             entityId: orgId,
             before,
         });
-    })
+
+        return members.map((m) => m.userId);
+    });
+
+    await invalidateMemberships(orgId, userIds);
 
 }
 
@@ -237,7 +246,7 @@ export async function updateMemberRole(ctx: AuditContext, orgId: string, userId:
 
     // return toMember(updated);
 
-    return prisma.$transaction(async (tx) => {
+    const result = prisma.$transaction(async (tx) => {
 
         const target = await findTargetMembership(orgId, userId, tx);
 
@@ -261,7 +270,10 @@ export async function updateMemberRole(ctx: AuditContext, orgId: string, userId:
 
             return toMember(updated);
         }
-    })
+    });
+
+    await invalidateMemberships(orgId, [userId]);
+    return result;
 }
 
 
@@ -273,7 +285,7 @@ export async function removeMember(ctx: AuditContext, orgId: string, userId: str
 
     // await prisma.membership.delete({ where : { id : target.id }});
 
-    return prisma.$transaction(async (tx) => {
+    prisma.$transaction(async (tx) => {
         const target = await findTargetMembership(orgId, userId, tx);
 
         if (target.role === Role.OWNER) throw AppError.forbidden("The owner cannot be removed");
@@ -293,6 +305,8 @@ export async function removeMember(ctx: AuditContext, orgId: string, userId: str
             after: { unassignedTasks: count },
         });
     });
+
+    await invalidateMemberships(orgId, [userId]);
 }
 
 

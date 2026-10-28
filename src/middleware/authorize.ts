@@ -9,19 +9,38 @@ import { AppError } from '../utils/AppError.js';
  * then stores the verified membership on req.membership.
  */
 
+import { cached } from '../lib/cache.js';
+import {
+    MEMBERSHIP_TTL_SECONDS,
+    membershipKey,
+    type CachedMembership
+} from "../modules/rbac/membershipCache.js";
+
 export const authorize =
     (permission: Permission): RequestHandler =>
         async (req, _res, next) => {
 
             const organizationId = req.params.orgId as string;
 
-            const membership = await prisma.membership.findUnique(
-                {
+            // const membership = await prisma.membership.findUnique(
+            //     {
 
-                    where: { userId_organizationId: { userId: req.user!.id, organizationId } },
-                    select: { organizationId: true, role: true }
-                }
-            )
+            //         where: { userId_organizationId: { userId: req.user!.id, organizationId } },
+            //         select: { organizationId: true, role: true }
+            //     }
+            // )
+
+
+            const userId = req.user!.id;
+            const membership = await cached<CachedMembership>(
+                membershipKey(organizationId, userId),
+                MEMBERSHIP_TTL_SECONDS,
+                () => 
+                    prisma.membership.findUnique({
+                        where : { userId_organizationId : { userId, organizationId }},
+                        select : { organizationId : true, role : true}
+                    }),
+            );
 
             // Not a member: pretend the org doesn't exist
 

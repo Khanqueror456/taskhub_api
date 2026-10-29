@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { rateLimit } from "./rateLimit.js";
+import type { Request } from 'express';
 
 const FIFTEEN_MINUTES = 15 * 60;
 const sha256 = (value : string) => createHash('sha256').update(value).digest('hex');
@@ -35,4 +36,14 @@ export const apiLimiter = rateLimit({
     limit : 120,
     windowSeconds : 60,
     key : (req) => req.user?.id,
+});
+
+// Runs after authorize
+export const orgKey = (req: Request) => req.membership?.organizationId;
+
+export const orgLimiter = rateLimit({
+    name : "per-org",
+    limit : 120,
+    windowSeconds : 60,
+    key: orgKey,
 });

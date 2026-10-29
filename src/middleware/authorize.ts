@@ -15,10 +15,11 @@ import {
     membershipKey,
     type CachedMembership
 } from "../modules/rbac/membershipCache.js";
+import { orgLimiter } from './limiters.js';
 
 export const authorize =
     (permission: Permission): RequestHandler =>
-        async (req, _res, next) => {
+        async (req, res, next) => {
 
             const organizationId = req.params.orgId as string;
 
@@ -50,5 +51,6 @@ export const authorize =
 
             req.membership = membership;
 
-            next();
+            return orgLimiter(req, res, next);
+            // next();
         }

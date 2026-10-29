@@ -42,7 +42,7 @@ export const apiLimiter = rateLimit({
 export const orgKey = (req: Request) => req.membership?.organizationId;
 
 export const orgLimiter = rateLimit({
-    name : "per-org",
+    name : "api-org",
     limit : 120,
     windowSeconds : 60,
     key: orgKey,

@@ -144,7 +144,7 @@ tests/
 - [x] Phase 3: Organizations and RBAC
 - [x] Phase 4: Core CRUD, pagination, filtering, search
 - [x] Phase 5: Transactions and audit logs
-- [ ] Phase 6: Redis (rate limiting, caching)
+- [x] Phase 6: Redis (rate limiting, caching)
 - [ ] Phase 7: Background jobs
 - [ ] Phase 8: Testing hardening
 - [ ] Phase 9: API docs and CI/CD

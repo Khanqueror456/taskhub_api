@@ -285,7 +285,7 @@ export async function removeMember(ctx: AuditContext, orgId: string, userId: str
 
     // await prisma.membership.delete({ where : { id : target.id }});
 
-    prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
         const target = await findTargetMembership(orgId, userId, tx);
 
         if (target.role === Role.OWNER) throw AppError.forbidden("The owner cannot be removed");

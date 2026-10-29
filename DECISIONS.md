@@ -347,3 +347,41 @@ Use the array form for independent queries. No network calls inside transactions
 **Decision:** `removeMember` unassigns the member's tasks, deletes the membership, and
 records the audit entry in one transaction.
 **Why:** Prevents tasks assigned to someone who no longer belongs to the org.
+
+---
+
+## 037 - Redis is an optimization: rate limiting and caching fail open
+**Decision:** Redis errors are caught and logged. A rate-limiter failure lets the request
+through; a cache failure falls back to Postgres. Client timeouts are short (500 ms).
+**Why:** Availability over strictness for a supporting service.
+**Trade-off:** During a Redis outage there is no rate limiting and every request hits
+the database.
+
+---
+
+## 038 - Fixed-window rate limiting with an atomic Lua script
+**Decision:** Counters use `INCR` plus a guaranteed `EXPIRE` in one Lua script. Policies
+live in `limiters.ts`: per-IP on auth routes, per-email on login, per-user on the API.
+`RateLimit-*` and `Retry-After` headers are returned.
+**Why:** Simple, fast, and race-free. The script prevents keys that never expire.
+**Trade-off:** A fixed window allows up to 2x the limit across a window boundary, per-IP
+limits penalise shared networks, and a per-email limit lets an attacker lock a victim out
+for up to 15 minutes. Sliding windows or token buckets are smoother alternatives.
+
+---
+
+## 039 - Cache-aside for membership lookups, positives only
+**Decision:** `authorize` reads memberships through `cached()` with a 60 s TTL. Entries are
+deleted after the transaction commits when a role changes, a member is removed, or an org
+is deleted. "Not a member" is never cached.
+**Why:** It removes a database query from every authenticated request without allowing
+long-lived stale permissions.
+**Trade-off:** If Redis is down during invalidation, a stale entry can survive up to 60 s.
+There is also a tiny read-before-commit race, bounded by the TTL.
+
+---
+
+## 040 - Configurable proxy trust and test-time switches
+**Decision:** `TRUST_PROXY_HOPS` controls Express' `trust proxy`; `RATE_LIMIT_ENABLED`
+disables limiting in tests, where the limiter is verified on a minimal app instead.
+**Why:** Without proxy trust, all users behind a load balancer would share one IP bucket.

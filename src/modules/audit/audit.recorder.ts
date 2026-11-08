@@ -2,7 +2,7 @@ import type { Request } from "express";
 import type { Prisma } from "../../generated/prisma/client.js";
 
 
-export const AUDIT_ENTITY_TYPES = ['organization', 'member', 'project', 'task', 'comment'] as const;
+export const AUDIT_ENTITY_TYPES = ['organization', 'member', 'project', 'task', 'comment', 'invitation'] as const;
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
 
 export type AuditAction =
@@ -10,7 +10,8 @@ export type AuditAction =
     | 'member.added' | 'member.role_changed' | 'member.removed'
     | 'project.created' | 'project.updated' | 'project.deleted'
     | 'task.created' | 'task.updated' | 'task.deleted'
-    | 'comment.created' | 'comment.deleted';
+    | 'comment.created' | 'comment.deleted'
+    | 'invitation.created' | 'invitation.revoked' | 'invitation.accepted';
 
 
 // Who is doing this, and from which request. Build once per request in the controller

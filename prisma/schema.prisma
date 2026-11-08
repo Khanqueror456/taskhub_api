@@ -15,16 +15,17 @@ enum Role {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  passwordHash  String
-  name          String
-  createdAt     DateTime       @default(now())
-  memberships   Membership[]
-  refreshTokens RefreshToken[]
-  assignedTasks Task[]         @relation("TaskAssignee")
-  createdTasks  Task[]         @relation("TaskCreator")
-  comments      Comment[]
+  id              String         @id @default(uuid())
+  email           String         @unique
+  passwordHash    String
+  name            String
+  createdAt       DateTime       @default(now())
+  memberships     Membership[]
+  refreshTokens   RefreshToken[]
+  assignedTasks   Task[]         @relation("TaskAssignee")
+  createdTasks    Task[]         @relation("TaskCreator")
+  comments        Comment[]
+  sentInvitations Invitation[]   @relation("InvitationInviter")
 
   @@map("users")
 }
@@ -38,6 +39,7 @@ model Organization {
   projects    Project[]
   tasks       Task[]
   comments    Comment[]
+  invitations Invitation[]
 
   @@map("organizations")
 }
@@ -136,21 +138,44 @@ model Comment {
 }
 
 model AuditLog {
-  id  String  @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String
-  actorId String?
-  action String
-  entityType  String
-  entityId  String
-  before  Json?
-  after Json?
-  requestId String?
-  ip  String?
-  userAgent String?
-  createdAt DateTime @default(now())
+  actorId        String?
+  action         String
+  entityType     String
+  entityId       String
+  before         Json?
+  after          Json?
+  requestId      String?
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
 
-
-  @@index([organizationId, createdAt(sort : Desc)])
-  @@index([organizationId, entityType,  entityId])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, entityType, entityId])
   @@map("audit_logs")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+model Invitation {
+  id             String           @id @default(uuid())
+  organizationId String
+  email          String
+  role           Role
+  tokenHash      String
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  invitedById    String?
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy      User?            @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status])
+  @@index([email])
+  @@map("invitations")
 }

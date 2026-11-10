@@ -59,5 +59,10 @@ describe('when the queue is unavailable', () => {
       expect.objectContaining({ label: 'welcome' }),
       'Failed to enqueue job',
     );
+
+    expect(mocks.logError).toHaveBeenCalledWith(
+      expect.objectContaining({ label: 'invite' }),
+      'Failed to enqueue job',
+    );
   });
 });

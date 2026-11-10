@@ -14,7 +14,7 @@ const schema = z.object({
   TRUST_PROXY_HOPS : z.coerce.number().int().min(0).default(0),
   SMTP_HOST : z.string().default('localhost'),
   SMTP_PORT : z.coerce.number().default(1025),
-  MAIL_FROM : z.string().default("TashHub <no-reply@taskhub.local>"),
+  MAIL_FROM : z.string().default("TaskHub <no-reply@taskhub.local>"),
   APP_URL : z.string().url().default("http://localhost:3000"),
   JOB_BACKOFF_MS : z.coerce.number().int().positive().default(2000),
   OVERDUE_SCAN_CRON : z.string().default('0 8 * * *'), // every day at 08 : 00

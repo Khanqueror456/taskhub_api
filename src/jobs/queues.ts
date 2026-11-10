@@ -5,7 +5,7 @@ import { bullConnection } from './connection.js';
 
 
 export const EMAIL_QUEUE = 'email';
-export const MAINTENANCE_QUEUE = 'maintainance';
+export const MAINTENANCE_QUEUE = 'maintenance';
 
 export const defaultJobOptions : JobsOptions = {
     attempts : 5,
@@ -19,13 +19,13 @@ export const emailQueue = new Queue(EMAIL_QUEUE, {
     defaultJobOptions,
 });
 
-export const maintainanceQueue = new Queue(MAINTENANCE_QUEUE, {
+export const maintenanceQueue = new Queue(MAINTENANCE_QUEUE, {
     connection : bullConnection('producer'),
     defaultJobOptions,
 });
 
 // Without listeners, connection errors become unhandled events
-for (const queue of [emailQueue, maintainanceQueue]) {
+for (const queue of [emailQueue, maintenanceQueue]) {
 
     queue.on('error', (err) => logger.error({ err, queue : queue.name }, 'Queue error'));
 }

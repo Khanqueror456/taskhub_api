@@ -9,6 +9,7 @@ import { orgRouter } from './modules/organizations/organizations.routes.js';
 import { projectRouter } from './modules/projects/projects.routes.js';
 import { taskRouter } from './modules/tasks/tasks.routes.js';
 import { auditRouter } from './modules/audit/audit.routes.js';
+import { acceptInvitationRouter, invitationRouter } from './modules/invitations/invitations.routes.js';
 import { env } from './config/env.js';
 
 export const app = express();
@@ -25,6 +26,8 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/orgs/:orgId/projects', projectRouter);
 app.use('/api/v1/orgs/:orgId/tasks', taskRouter);
 app.use('/api/v1/orgs/:orgId/audit-logs', auditRouter);
+app.use('/api/v1/orgs/:orgId/invitations', invitationRouter);
+app.use('/api/v1/invitations', acceptInvitationRouter);
 app.use('/api/v1/orgs', orgRouter); // Order matters here. If orgRouter came first, its authenticate would run on these paths too. It would still work, but it would verify the JWT twice.
 
 

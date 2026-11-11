@@ -10,7 +10,7 @@ import {
     hashRefreshToken,
     signAccessToken,
 } from './tokens.js'
-
+import { enqueueWelcomeEmail } from '../../jobs/enqueue.js';
 
 const DUMMY_HASH = await argon2.hash('dummy-password-for-timing');
 
@@ -55,6 +55,7 @@ export async function register(input : { email : string, password : string, name
         });
 
         const tokens = await issueTokens(user.id, randomUUID());
+        await enqueueWelcomeEmail(user.id); // after the commit; never throws
         
         return { user, ...tokens};
         

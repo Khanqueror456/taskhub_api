@@ -47,3 +47,10 @@ export const orgLimiter = rateLimit({
     windowSeconds : 60,
     key: orgKey,
 });
+
+export const acceptInviteLimiter = rateLimit({
+    name : 'invite-accpet',
+    limit : 30,
+    windowSeconds : FIFTEEN_MINUTES,
+    key : (req) => req.ip,
+});

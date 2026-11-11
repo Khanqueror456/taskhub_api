@@ -3,6 +3,7 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { prisma } from './lib/prisma.js';
 import { redis } from './lib/redis.js';
+import { emailQueue, maintenanceQueue } from './jobs/queues.js';
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
@@ -13,7 +14,7 @@ async function shutdown(signal : string) {
   logger.info(`${signal} received, shutting down`);
   server.close((async () => {
     // await prisma.$disconnect();
-    await Promise.allSettled([prisma.$disconnect(), redis.quit()])
+    await Promise.allSettled([prisma.$disconnect(), redis.quit(), emailQueue.close(), maintenanceQueue.close()])
     process.exit(0);
   }));
 

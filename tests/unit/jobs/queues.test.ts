@@ -9,7 +9,7 @@ vi.mock('../../../src/jobs/connection.js', () => ({
   bullConnection: (role: string) => ({ role }),
 }));
 vi.mock('../../../src/config/logger.js', () => ({ logger: { error: mocks.logError } }));
-
+//
 // queues.ts creates its queues when imported, so reload it for every test
 async function loadQueues() {
   vi.resetModules();

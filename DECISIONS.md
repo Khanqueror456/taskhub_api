@@ -385,3 +385,71 @@ There is also a tiny read-before-commit race, bounded by the TTL.
 **Decision:** `TRUST_PROXY_HOPS` controls Express' `trust proxy`; `RATE_LIMIT_ENABLED`
 disables limiting in tests, where the limiter is verified on a minimal app instead.
 **Why:** Without proxy trust, all users behind a load balancer would share one IP bucket.
+
+---
+
+## 041 - BullMQ with a separate worker process
+**Decision:** Slow and scheduled work runs in `src/worker.ts`, a second process that shares
+the codebase but not the HTTP server. The API only adds jobs.
+**Why:** Requests stay fast and independent of the mail server, and the worker can be
+restarted or scaled separately. Producers fail fast when Redis is down; workers wait and retry.
+
+---
+
+## 042 - Job payloads carry ids, not copies of data
+**Decision:** Jobs hold identifiers (`userId`, `invitationId`); the worker loads current data.
+The invite token is the exception, because only its hash is stored.
+**Why:** Smaller payloads, and the worker acts on the truth at execution time (a revoked
+invitation is never emailed).
+
+---
+
+## 043 - Retries with backoff; permanent failures are marked unrecoverable
+**Decision:** 5 attempts with exponential backoff (2 s, 4 s, ...). Errors that can never
+succeed throw `UnrecoverableError` and skip retries. Failed jobs are kept 7 days.
+**Why:** Transient problems heal themselves; hopeless jobs do not waste retries and stay
+visible for inspection.
+
+---
+
+## 044 - At-least-once delivery, so jobs are idempotent
+**Decision:** Jobs use deterministic ids (`welcome-<user>`, `invite-<id>`,
+`overdue-<user>-<date>`), so enqueueing twice creates one job.
+**Why:** A job can run twice after a crash. Deduplicated ids prevent duplicate enqueues, and
+the last step of each processor (sending) is the only side effect.
+**Trade-off:** If a worker crashes after sending but before acknowledging, one email can
+repeat. Deduplication lasts only while the job is retained in Redis.
+
+---
+
+## 045 - Enqueue after commit, best effort
+**Decision:** Jobs are queued after the database transaction commits. A failure to enqueue
+is logged and reported (`emailQueued: false`), never thrown at the user.
+**Why:** The user action is already done and valid.
+**Known gap:** If Redis is down at that moment (or the process dies between commit and
+enqueue), the job is lost. A transactional outbox would close it.
+
+---
+
+## 046 - Overdue reminders are a scan plus per-user digest jobs
+**Decision:** A cron-scheduled `scan-overdue` job fans out one `overdue-digest` job per
+user per day (date in the job id). The digest re-reads the tasks when it runs.
+**Why:** Failures and retries are isolated per recipient, and rerunning the scan is harmless.
+**Note:** The scan is the only deliberate cross-tenant read, and runs only in worker code.
+
+---
+
+## 047 - Invitations: hashed single-use token, expiry, matching account
+**Decision:** 256-bit random token stored as a SHA-256 hash, 7-day expiry, status flipped
+with a compare-and-set, and the accepting account's email must match the invitation.
+Every invalid state returns the same 410.
+**Why:** A stolen database, a forwarded email, or a race cannot grant membership.
+**Trade-off:** The duplicate-pending check is check-then-insert, so two simultaneous
+invites could both pass. A partial unique index would close it.
+
+---
+
+## 048 - Isolated Redis database and sequential files in tests
+**Decision:** Tests use Redis database 1, flushed once per run, and test files run one at
+a time.
+**Why:** Queue tests need a predictable queue and must not touch development data.

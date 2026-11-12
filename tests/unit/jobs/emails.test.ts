@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { inviteEmail, overdueDigestEmail, welcomeEmail } from '../../../src/jobs/emails.js';
+import { describe, expect, it, vi } from 'vitest';
 
-// APP_URL is set to https://app.example.test in vitest.unit.config.ts
+vi.mock('../../../src/config/env.js', () => ({
+  env: { APP_URL: 'https://app.example.test' },
+}));
+
+import { inviteEmail, overdueDigestEmail, welcomeEmail } from '../../../src/jobs/emails.js';
 
 describe('welcomeEmail', () => {
   it('greets the user by name and is addressed to their email', () => {

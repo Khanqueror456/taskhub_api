@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ createTransport: vi.fn(), sendMail: vi.fn() }));
+
+vi.mock('../../../src/config/env.js', () => ({
+  env: { SMTP_HOST: 'smtp.test', SMTP_PORT: 2525, MAIL_FROM: 'TaskHub Test <test@taskhub.test>' },
+}));
 vi.mock('nodemailer', () => ({ default: { createTransport: mocks.createTransport } }));
 
 import { createSmtpMailer } from '../../../src/jobs/mailer.js';

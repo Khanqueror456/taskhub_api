@@ -3,6 +3,7 @@ import { env } from '../../../src/config/env.js';
 
 const mocks = vi.hoisted(() => ({ on: vi.fn(), Queue: vi.fn(), logError: vi.fn() }));
 
+vi.mock('../../../src/config/env.js', () => ({ env: { JOB_BACKOFF_MS: 10 } }));
 vi.mock('bullmq', () => ({ Queue: mocks.Queue }));
 vi.mock('../../../src/jobs/connection.js', () => ({
   bullConnection: (role: string) => ({ role }),

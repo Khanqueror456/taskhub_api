@@ -1,13 +1,13 @@
 import { logger } from "./config/logger.js";
 import { createSmtpMailer } from "./jobs/mailer.js";
 import { emailQueue, maintenanceQueue } from "./jobs/queues.js";
-import { registerScheules } from "./jobs/scheduler.js";
+import { registerSchedules } from "./jobs/scheduler.js";
 import { createWorkers } from "./jobs/workers.js";
 import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
 
 const workers = createWorkers({ mailer : createSmtpMailer() });
-await registerScheules();
+await registerSchedules();
 logger.info('Worker started');
 
 async function shutdown(signal : string) {

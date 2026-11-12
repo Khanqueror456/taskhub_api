@@ -23,7 +23,7 @@ export const inviteEmail = (a: {
     subject: `${a.inviterName} invited you to ${a.orgName} on TaskHub`,
     text:
         `${a.inviterName} invited you to join ${a.orgName} as ${a.role}.\n\n` +
-        `Accept here: ${env.APP_URL}/accept-invite?token=${a.token}\n\n` +
+        `Accept here: ${env.APP_URL}/api/v1/invitations/accept?token=${a.token}\n\n` +
         `(API clients: POST /api/v1/invitations/accept with {"token": "${a.token}"} while signed in as ${a.to}.)\n` +
         `This invitation expires in 7 days.\n`,
 });

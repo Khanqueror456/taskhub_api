@@ -50,6 +50,8 @@ export async function createOrganization(ctx: AuditContext, userId: string, name
     // Both rows or netiher : an org without an owner would be unreachable
 
     return prisma.$transaction(async (tx) => {
+        const existing = await tx.organization.findFirst({ where : { name : name } });
+        if (existing) throw AppError.conflict('An organization already exists with this name');
         const org = await tx.organization.create({ data: { name, slug: makeSlug(name) } });
         await tx.membership.create({
             data: { userId, organizationId: org.id, role: Role.OWNER },

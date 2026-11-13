@@ -102,7 +102,7 @@ export async function deleteProject(ctx : AuditContext, orgId : string, projectI
 {
     // await prisma.project.delete({ where : { id : projectId, organizationId : orgId }});
 
-    prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
 
         const before = await tx.project.findFirst({
             where : {id : projectId, organizationId : orgId}

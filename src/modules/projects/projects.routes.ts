@@ -37,7 +37,7 @@ projectRouter.get('/:projectId', validate({ params : projectParams }), authorize
 
 projectRouter.patch(
     '/:projectId',
-    validate({ params : orgParams, body : updateProjectSchema }),
+    validate({ params : projectParams, body : updateProjectSchema }),
     authorize('project:write'),
     c.updateProject
 )

@@ -33,7 +33,7 @@ projectRouter.post(
     c.createProject
 );
 
-projectRouter.get('/:projectid', validate({ params : projectParams }), authorize('project:read'), c.getProject);
+projectRouter.get('/:projectId', validate({ params : projectParams }), authorize('project:read'), c.getProject);
 
 projectRouter.patch(
     '/:projectId',

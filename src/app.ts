@@ -11,8 +11,20 @@ import { taskRouter } from './modules/tasks/tasks.routes.js';
 import { auditRouter } from './modules/audit/audit.routes.js';
 import { acceptInvitationRouter, invitationRouter } from './modules/invitations/invitations.routes.js';
 import { env } from './config/env.js';
+import cors from 'cors';
 
 export const app = express();
+
+const corsOptions = {
+    origin : process.env.CORS_ORIGIN || 'http://localhost:5173',
+    methods : ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders : ['Content-Type', 'Authorization'],
+    credentials : true
+}
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 
 app.set('trust proxy', env.TRUST_PROXY_HOPS)
 

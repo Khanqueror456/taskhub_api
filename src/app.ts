@@ -23,7 +23,6 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 
 app.set('trust proxy', env.TRUST_PROXY_HOPS)

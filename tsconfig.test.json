@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": ".",
+    "emitDeclarationOnly": true,
+    "outDir": ".ts-test-cache"
+  },
+  "include": ["src", "tests"],
+  "composite" : true
+}

@@ -156,7 +156,7 @@ describe('reading organizations', () => {
 
 describe('updateOrganization', () => {
   it('records only what changed', async () => {
-    tx.organization.findUnique.mockResolvedValue({ id: 'org1', name: 'Old', updatedAt: createdAt });
+    tx.organization.findFirst.mockResolvedValue({ id: 'org1', name: 'Old', updatedAt: createdAt });
     tx.organization.update.mockResolvedValue({ id: 'org1', name: 'New', updatedAt: new Date() });
 
     await updateOrganization(ctx, 'org1', 'New');
@@ -174,7 +174,7 @@ describe('updateOrganization', () => {
 
   it('writes no audit entry when the name is unchanged', async () => {
     const row = { id: 'org1', name: 'Same', updatedAt: createdAt };
-    tx.organization.findUnique.mockResolvedValue(row);
+    tx.organization.findFirst.mockResolvedValue(row);
     tx.organization.update.mockResolvedValue(row);
 
     await updateOrganization(ctx, 'org1', 'Same');
@@ -183,7 +183,7 @@ describe('updateOrganization', () => {
   });
 
   it('answers 404 and changes nothing for an organization that does not exist', async () => {
-    tx.organization.findUnique.mockResolvedValue(null);
+    tx.organization.findFirst.mockResolvedValue(null);
 
     await expect(updateOrganization(ctx, 'org1', 'New')).rejects.toMatchObject({ statusCode: 404 });
     expect(tx.organization.update).not.toHaveBeenCalled();

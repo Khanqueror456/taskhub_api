@@ -249,7 +249,7 @@ export async function updateMemberRole(ctx: AuditContext, orgId: string, userId:
 
     // return toMember(updated);
 
-    const result = prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
 
         const target = await findTargetMembership(orgId, userId, tx);
 

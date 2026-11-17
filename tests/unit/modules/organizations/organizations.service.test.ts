@@ -192,7 +192,7 @@ describe('updateOrganization', () => {
 
 describe('deleteOrganization', () => {
   beforeEach(() => {
-    tx.organization.findUnique.mockResolvedValue({ id: 'org1', name: 'Acme' });
+    tx.organization.findFirst.mockResolvedValue({ id: 'org1', name: 'Acme' });
     tx.membership.findMany.mockResolvedValue([{ userId: 'u1' }, { userId: 'u2' }]);
   });
 
@@ -228,7 +228,7 @@ describe('deleteOrganization', () => {
   });
 
   it('answers 404 and invalidates nothing when the organization does not exist', async () => {
-    tx.organization.findUnique.mockResolvedValue(null);
+    tx.organization.findFirst.mockResolvedValue(null);
 
     await expect(deleteOrganization(ctx, 'org1')).rejects.toMatchObject({ statusCode: 404 });
     expect(tx.organization.delete).not.toHaveBeenCalled();

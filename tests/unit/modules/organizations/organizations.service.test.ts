@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const tx = vi.hoisted(() => ({
-  organization: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  organization: { create: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), delete: vi.fn() },
   membership: {
     create: vi.fn(),
     findUnique: vi.fn(),
@@ -420,4 +420,12 @@ describe('removeMember', () => {
     await expect(removeMember(ctx, 'org1', 'u9')).rejects.toMatchObject({ statusCode: 404 });
     expect(mocks.invalidate).not.toHaveBeenCalled();
   });
+
+  it('answers 409 and creates nothing when the organization already exists', async () => {
+  tx.organization.findFirst.mockResolvedValue({ id: 'existing' });
+
+  await expect(createOrganization(ctx, ctx.userId, 'Acme Inc')).rejects.toMatchObject({ statusCode: 409 });
+  expect(tx.organization.create).not.toHaveBeenCalled();
+  expect(tx.membership.create).not.toHaveBeenCalled();
+});
 });

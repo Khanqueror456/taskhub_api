@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "vitest": { "configFile": "vitest.unit.config.ts" },
+  "mutate": [
+    "src/modules/rbac/permissions.ts",
+    "src/modules/auth/tokens.ts",
+    "src/utils/pagination.ts",
+    "src/middleware/authorize.ts",
+    "src/modules/invitations/invitations.service.ts"
+  ],
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "html"],
+  "thresholds": { "high": 90, "low": 75, "break": 60 }
+}

@@ -146,7 +146,7 @@ tests/
 - [x] Phase 5: Transactions and audit logs
 - [x] Phase 6: Redis (rate limiting, caching)
 - [x] Phase 7: Background jobs
-- [ ] Phase 8: Testing hardening
+- [x] Phase 8: Testing hardening
 - [ ] Phase 9: API docs and CI/CD
 - [ ] Phase 10: Polish and deployment
 

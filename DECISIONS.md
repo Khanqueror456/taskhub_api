@@ -453,3 +453,49 @@ invites could both pass. A partial unique index would close it.
 **Decision:** Tests use Redis database 1, flushed once per run, and test files run one at
 a time.
 **Why:** Queue tests need a predictable queue and must not touch development data.
+
+---
+
+## 050 - A dedicated test database with a safety guard
+**Decision:** Integration tests run against `taskhub_test` (and Redis database 1). Global setup
+creates the database, runs `prisma migrate deploy`, and truncates the tables. It refuses to run unless
+the database name ends in `_test` and the Redis database is not 0.
+**Why:** Tests must never read or destroy development data, and the guard turns a mistyped URL
+into an error instead of data loss.
+**Trade-off:** Setup adds a few seconds per run, and CI must provide `TEST_DATABASE_URL`.
+
+---
+
+## 051 - Strict per-file coverage on security code, a ratchet elsewhere
+**Decision:** Auth, RBAC, rate limiting, and audit files have 90-100% thresholds. Everything else has
+a global floor that is raised, never lowered.
+**Why:** Coverage shows where tests are missing, not whether they are good. Strictness belongs where a gap
+is a vulnerability.
+
+---
+
+## 052 - Mutation testing on critical files
+**Decision:** Stryker mutates permissions, tokens, pagination, the tenant check, and invitations.
+Survivors that touch behavior get a new test.
+**Why:** It is the only check that proves tests would fail if the code broke.
+
+---
+
+## 053 - Security regression tests
+**Decision:** Integration tests attack the API: forged and expired tokens, `alg: none`, mass assignment,
+self-promotion, cross-tenant access to comments, malformed input, and password-hash leaks.
+**Why:** These are the bugs that would hurt most, and each now stays fixed. The suite already found one
+(deleted accounts creating organizations returned 500; now 401).
+
+---
+
+## 054 - Rate limiting is verified through the real app
+**Decision:** One test file enables limiting, reloads the app, and checks the 429 on login and the
+per-user and per-organization counters.
+**Why:** Unit tests prove the limiter works; this proves it is attached.
+
+---
+
+## 055 - Tests are type-checked and CI runs one command
+**Decision:** `tsconfig.test.json` covers tests and scripts, and `npm run ci` is the single gate.
+**Why:** Untyped tests rot silently. One command means the local check and the pipeline never drift apart.

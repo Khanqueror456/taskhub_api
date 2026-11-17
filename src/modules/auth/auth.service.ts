@@ -88,7 +88,7 @@ export async function login(input : { email : string, password : string}) {
     const tokens = await issueTokens(user?.id, randomUUID());
 
     return {
-        user : { id : user.id, email : user.email, name : user.name, createAt : user.createdAt },
+        user : { id : user.id, email : user.email, name : user.name, createdAt : user.createdAt },
         ...tokens,
     };
 

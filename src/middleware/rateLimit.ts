@@ -30,7 +30,7 @@ export function rateLimit(opts : RateLimitOptions) : RequestHandler {
         if (!id) return next();
 
         const result = await redis
-        .eval(SCRIPT, 1, `r1:${opts.name}:${id}`, opts.windowSeconds)
+        .eval(SCRIPT, 1, `rl:${opts.name}:${id}`, opts.windowSeconds)
         .then((r) => r as [number, number])
         .catch((err : unknown) => {
             req.log.warn({ err }, "Rate limited unavailable, allowing request");

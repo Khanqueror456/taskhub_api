@@ -43,6 +43,7 @@
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^10.4.0",
+    "openai": "^7.58.0",
     "pg": "^8.23.1",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",

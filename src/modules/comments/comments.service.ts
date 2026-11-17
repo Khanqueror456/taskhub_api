@@ -20,7 +20,7 @@ export async function listComments(orgId : string, taskId : string, q : ListComm
     await assertTaskInOrg(orgId, taskId);
     const rows = await prisma.comment.findMany({
         where : { organizationId : orgId, taskId },
-        orderBy : [{ createdAt : 'desc'}, { id : 'asc'}],
+        orderBy : [{ createdAt : 'asc'}, { id : 'asc'}],
         take : q.limit + 1,
         ...(q.cursor ? { cursor : { id : q.cursor }, skip : 1} : {}),
     });

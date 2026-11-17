@@ -139,7 +139,7 @@ export async function listTasks(orgId : string, userId : string, q : ListTasksQu
 
     const where : Prisma.TaskWhereInput = {
         organizationId : orgId, // the tenant boundary : always first, never optional
-        ...(q.projectid ? { projectId : q.projectid } : {}),
+        ...(q.projectId ? { projectId : q.projectId } : {}),
         ...(q.status ? { status : q.status } : {}),
         ...(q.priority ? { priority : q.priority } : {}),
         ...(q.assignee === 'me' ? { assigneeId : userId } : {}),

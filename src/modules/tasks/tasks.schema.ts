@@ -22,7 +22,7 @@ export const updateTaskSchema = taskFields
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 
 export const listTasksQuery = cursorQuery.extend({
-    projectid : z.uuid().optional(),
+    projectId : z.uuid().optional(),
     status : z.enum(TaskStatus).optional(),
     priority : z.enum(TaskPriority).optional(),
     assignee : z.union([z.uuid(), z.enum(['me', 'unassigned'])]).optional(),

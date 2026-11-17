@@ -112,7 +112,7 @@ export async function refresh(refreshToken : string) {
             data : { revokedAt : new Date()}
         })
 
-        throw AppError.unauthorized('Refresh token resue detected. Please log in again');
+        throw AppError.unauthorized('Refresh token reuse detected. Please log in again');
     }
 
     if (stored.expiresAt < new Date())
@@ -131,7 +131,7 @@ export async function refresh(refreshToken : string) {
 
         if (count === 0)
         {
-            throw AppError.unauthorized('Refresh token  already used');
+            throw AppError.unauthorized('Refresh token already used');
         }
 
         return issueTokens(stored?.userId, stored?.familyId, tx);

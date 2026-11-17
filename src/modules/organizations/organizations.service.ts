@@ -270,8 +270,8 @@ export async function updateMemberRole(ctx: AuditContext, orgId: string, userId:
                 after: { role }
             });
 
-            return toMember(updated);
         }
+        return toMember(updated);
     });
 
     await invalidateMemberships(orgId, [userId]);

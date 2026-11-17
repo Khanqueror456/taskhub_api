@@ -88,7 +88,7 @@ export async function updateTask(ctx :AuditContext ,orgId : string, taskId : str
         if (!before) throw AppError.notFound('Task not found');
 
         const after = await tx.task.update({
-            where : { id : taskId},
+            where : { id : taskId, organizationId : orgId},
             data : input,
         });
 

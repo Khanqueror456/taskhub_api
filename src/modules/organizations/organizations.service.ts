@@ -12,6 +12,7 @@ function makeSlug(name: string): string {
             .toLowerCase()
             .normalize('NFKD')
             .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
             .slice(0, 40) || 'org';
 
     return `${base}-${randomBytes(3).toString('hex')}`;

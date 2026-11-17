@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Role } from '../../../../../src/generated/prisma/client.js';
+import type { Role } from '../../../../src/generated/prisma/client.js';
 import {
   hasPermission,
   rolePermissions,
   type Permission,
-} from '../../../../../src/modules/rbac/permissions.js';
+} from '../../../../src/modules/rbac/permissions.js';
 
 const ROLES: Role[] = ['VIEWER', 'MEMBER', 'ADMIN', 'OWNER'];
 

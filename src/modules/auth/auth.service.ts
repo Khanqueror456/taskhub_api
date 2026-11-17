@@ -152,7 +152,7 @@ export async function logout(refreshToken : string) {
 
 export async function getMe(userId : string)
 {
-    const user = prisma.user.findUnique({ where : { id : userId}, select : publicUser});
+    const user = await prisma.user.findUnique({ where : { id : userId}, select : publicUser});
 
     if (!user) throw AppError.unauthorized();
 

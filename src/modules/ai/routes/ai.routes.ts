@@ -13,5 +13,6 @@ const aiController = new AIController(createAIService());
 router.use(authenticate);
 
 router.post('/chat', validate({ params : orgParams, body : chatRequestSchema}), authorize('org:read'), aiController.chat);
+router.post('/chat/stream', aiController.chatStream);
 
 export default router;

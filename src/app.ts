@@ -33,7 +33,7 @@ app.use(requestLogger);
 app.use(express.json({ limit : '100kb'}));
 
 // Routers
-app.use('/api/v1/ai', aiRouter);
+app.use('/api/v1/orgs/:orgId/ai', aiRouter);
 app.use('/health', healthRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/orgs/:orgId/projects', projectRouter);

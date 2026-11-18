@@ -1,43 +1,32 @@
 import { LLMProvider, LLMResponse } from "../providers/llm.provider.js";
-import { OpenAIProvider } from "../providers/openai.provider.js";
 import { GroqProvider } from '../providers/groq.provider.js';
+import { buildCopilotSystemPrompt, CopilotPromptContext } from "../prompts/system.prompt.js";
+import { applyTokenBudget } from "../utils/token-budget.js";
+import { ChatRequestInput } from "../schemas/chat.schema.js";
 
 export class AIService{
     constructor(private readonly provider : LLMProvider) {};
 
-    async chat(userMessage : string) : Promise<LLMResponse> {
-        return this.provider.generateText({
-            messages : [
-                {
-                    role : 'system',
-                    content : 'You are TaskHub AI Copilot, a concisse and accurate project management assistant.',
-                },
-                {
-                    role : 'user',
-                    content : userMessage
-                }
-            ],
-        });
+    async chat(input : ChatRequestInput, context : CopilotPromptContext) : Promise<LLMResponse> {
+        const systemMessage = {
+          role : 'system' as const,
+          content : buildCopilotSystemPrompt({
+            ...context,
+            projectSummary : input.projectSummary,
+          }),
+        }
+
+        const userMessage = {
+          role : 'user' as const,
+          content : input.message
+        };
+
+        const messages = applyTokenBudget(systemMessage, input.history, userMessage, 4000);
+
+        return this.provider.generateText({ messages });
     }
 }
 
-// export function createAIService() : AIService {
-//     const apiKey = process.env.AI_API_KEY;
-//     if (!apiKey) {
-//         throw new Error('AI_API_KEY is not configured');
-//     }
-
-//     const provider = new OpenAIProvider({
-//         apiKey,
-//         baseURL : process.env.AI_BASE_URL,
-//         model : process.env.AI_MODEL ?? 'gpt-4o-mini',
-//         defaultMaxTokens : Number(process.env.AI_MAX_TOKENS ?? 2000),
-//         defaultTemperature : Number(process.env.AI_TEMPERATURE ?? 0.3),
-//         timeoutMs : Number(process.env.AI_TIMEOUT_MS ?? 30_000),
-//     });
-
-//     return new AIService(provider);
-// }
 
 export function createAIService(): AIService {
   const providerName = process.env.AI_PROVIDER ?? 'groq';

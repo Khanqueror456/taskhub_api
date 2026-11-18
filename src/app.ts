@@ -33,13 +33,13 @@ app.use(requestLogger);
 app.use(express.json({ limit : '100kb'}));
 
 // Routers
-app.use('/api/v1/orgs/:orgId/ai', aiRouter);
 app.use('/health', healthRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/orgs/:orgId/projects', projectRouter);
 app.use('/api/v1/orgs/:orgId/tasks', taskRouter);
 app.use('/api/v1/orgs/:orgId/audit-logs', auditRouter);
 app.use('/api/v1/orgs/:orgId/invitations', invitationRouter);
+app.use('/api/v1/orgs/:orgId/ai', aiRouter);
 app.use('/api/v1/invitations', acceptInvitationRouter);
 app.use('/api/v1/orgs', orgRouter); // Order matters here. If orgRouter came first, its authenticate would run on these paths too. It would still work, but it would verify the JWT twice.
 

@@ -3,6 +3,7 @@ import {
   GenerateTextOptions,
   LLMProvider,
   LLMResponse,
+  StreamChunk,
 } from './llm.provider.js';
 
 export interface GroqProviderConfig {
@@ -65,5 +66,60 @@ export class GroqProvider implements LLMProvider {
           }
         : undefined,
     };
+  }
+
+  async *streamText(
+    options : GenerateTextOptions
+  ) : AsyncGenerator<StreamChunk, void, unknown> {
+
+    const stream = await this.client.chat.completions.create(
+      {
+        model : this.model,
+        messages : options.messages.map((m) => ({
+          role : m.role as 'system' | 'user' | 'assistant',
+          content : m.content
+        })),
+        temperature : options.temperature ?? this.defaultTemperature,
+        max_tokens : options.maxTokens ?? this.defaultMaxTokens,
+        stream : true,
+        stream_options : { include_usage : true },
+      },
+      { signal : options.signal }
+    );
+
+    let lastModel = this.model;
+    let lastFinishReason : string | undefined;
+
+    for await (const part of stream) {
+      lastModel = part.model ?? lastModel;
+      const choice = part.choices[0];
+      const delta = choice?.delta?.content ?? '';
+
+      if (choice?.finish_reason) {
+        lastFinishReason = choice.finish_reason;
+      }
+
+      if (delta) {
+        yield { delta, done : false};
+      }
+
+      if (part.usage) {
+        yield {
+          delta : '',
+          done : true,
+          model : lastModel,
+          finishReason : lastFinishReason,
+          usage : {
+            promptTokens : part.usage.prompt_tokens,
+            completionTokens : part.usage.completion_tokens,
+            totalTokens : part.usage.total_tokens,
+          }
+        }
+
+        return;
+      }
+    }
+
+    yield { delta : '', done : true, model : lastModel, finishReason : lastFinishReason };
   }
 }

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { chatRequestSchema } from '../schemas/chat.schemas.js';
+import { chatRequestSchema } from '../schemas/chat.schema.js';
 import { AIService } from '../services/ai.service.js';
 
 export class AIController {

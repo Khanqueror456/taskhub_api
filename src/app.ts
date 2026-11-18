@@ -10,6 +10,7 @@ import { projectRouter } from './modules/projects/projects.routes.js';
 import { taskRouter } from './modules/tasks/tasks.routes.js';
 import { auditRouter } from './modules/audit/audit.routes.js';
 import { acceptInvitationRouter, invitationRouter } from './modules/invitations/invitations.routes.js';
+import aiRouter from "./modules/ai/routes/ai.routes.js";
 import { env } from './config/env.js';
 import cors from 'cors';
 
@@ -32,6 +33,7 @@ app.use(requestLogger);
 app.use(express.json({ limit : '100kb'}));
 
 // Routers
+app.use('/api/v1/ai', aiRouter);
 app.use('/health', healthRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/orgs/:orgId/projects', projectRouter);

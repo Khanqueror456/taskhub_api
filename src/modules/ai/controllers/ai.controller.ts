@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { chatRequestSchema } from '../schemas/chat.schema.js';
 import { AIService } from '../services/ai.service.js';
 
+const orgId = (req: Request) => req.membership!.organizationId;
+const targetUserId = (req: Request) => req.params.userId as string;
+const targetUserRole = (req : Request) => req.membership!.role;
+
 export class AIController {
     constructor(private readonly aiService : AIService) {}
 
@@ -15,7 +19,7 @@ export class AIController {
                 })
             }
 
-            const result = await this.aiService.chat(parsed.data.message);
+            const result = await this.aiService.chat(parsed.data, {organizationId : orgId(req), userId : targetUserId(req), userRole : targetUserRole(req)});
             return res.status(200).json({ data : result });
             
         } catch(error) {

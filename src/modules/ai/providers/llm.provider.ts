@@ -27,7 +27,16 @@ export interface LLMResponse {
     finishReason? : string;
 }
 
+export interface StreamChunk {
+    delta : string;
+    done : boolean;
+    model? : string;
+    finishReason? : string;
+    usage? : LLMUsage
+}
+
 export interface LLMProvider {
     readonly name : string;
     generateText(options : GenerateTextOptions) : Promise<LLMResponse>;
+    streamText(options : GenerateTextOptions) : AsyncGenerator<StreamChunk, void, unknown>;
 }

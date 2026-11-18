@@ -26,4 +26,66 @@ export class AIController {
             return next(error);
         }
     }
+
+    chatStream = async (req : Request, res : Response, next : NextFunction) => {
+
+        try {
+            const parsed = chatRequestSchema.safeParse(req.body);
+
+            if (!parsed.success) {
+                return res.status(400).json({
+                    error : 'Validation failed',
+                    details : parsed.error.flatten(),
+                });
+            }
+
+            const abortController = new AbortController();
+            res.on('close', () => {
+                if (!res.writableEnded)
+                    abortController.abort();
+            })
+
+            const stream = this.aiService.chatStream(
+                parsed.data,
+                {
+                    organizationId : orgId(req),
+                    userId : targetUserId(req),
+                    userRole : targetUserRole(req),
+                },
+                abortController.signal
+            );
+
+            res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+            res.setHeader('Cache-Control', 'no-cache, no-transform');
+            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('X-Accel-Buffering', 'no');
+            res.flushHeaders();
+
+
+            try {
+                for await (const chunk of stream) {
+                    if (abortController.signal.aborted) break;
+                    res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                }
+
+                if (!abortController.signal.aborted)
+                    res.write('data: [DONE]\n\n');
+                
+            } catch (streamError) {
+                if(!abortController.signal.aborted) {
+                    const message = 
+                    streamError instanceof Error ? streamError.message : 'Streaming failed';
+                    res.write(`event: error\ndata: ${JSON.stringify({ message })}\n\n`);
+                }
+            } finally {
+                if (!res.writableEnded) {
+                    res.end();
+                }
+            }
+            
+        } catch (error) {
+            
+            return next(error);
+        }
+    }
 }

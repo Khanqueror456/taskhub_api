@@ -25,6 +25,28 @@ export class AIService{
 
         return this.provider.generateText({ messages });
     }
+
+    chatStream(
+      input : ChatRequestInput,
+      context : CopilotPromptContext,
+      signal? : AbortSignal
+    ) {
+        const systemMessage = {
+          role : 'system' as const,
+          content : buildCopilotSystemPrompt({
+            ...context,
+            projectSummary : input.projectSummary,
+          }),
+        };
+
+        const userMessage = {
+          role : 'user' as const,
+          content : input.message,
+        };
+
+        const messages = applyTokenBudget(systemMessage, input.history, userMessage, 4000);
+        return this.provider.streamText({ messages, signal });
+    }
 }
 
 

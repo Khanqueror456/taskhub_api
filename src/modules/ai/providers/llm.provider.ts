@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export type MessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
 export interface ChatMessage {
@@ -12,6 +14,19 @@ export interface GenerateTextOptions {
     temperature? : number;
     maxTokens? : number;
     signal? : AbortSignal;
+}
+
+export interface GenerateStructuredOptions<T> extends GenerateTextOptions {
+    schemaName : string;
+    jsonSchema : Record<string, unknown>;
+    zodSchema : z.ZodType<T>;
+}
+
+export interface LLMStructuredResponse<T> {
+    data : T;
+    model : string;
+    finishReason? : string;
+    usage? : LLMUsage;
 }
 
 export interface LLMUsage {
@@ -39,4 +54,7 @@ export interface LLMProvider {
     readonly name : string;
     generateText(options : GenerateTextOptions) : Promise<LLMResponse>;
     streamText(options : GenerateTextOptions) : AsyncGenerator<StreamChunk, void, unknown>;
+    generateStructured<T>(
+        options : GenerateStructuredOptions<T>
+    ) : Promise<LLMStructuredResponse<T>>;
 }

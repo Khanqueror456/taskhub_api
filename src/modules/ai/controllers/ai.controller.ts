@@ -106,7 +106,7 @@ export class AIController {
                 userRole : targetUserRole(req),
             });
 
-            return res.status(200).json({ data : result });
+            return res.status(200).json({ data: result.data, meta: { model: result.model, usage: result.usage } });
             
         } catch (error) {
             return next(error);

@@ -2,11 +2,28 @@ import { z } from 'zod';
 
 export type MessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
+export interface ToolCall {
+    id : string;
+    name : string;
+    argumentsJson : string;
+}
+
+export interface ToolDefinition {
+    name : string;
+    description : string;
+    parameters : Record<string, unknown>;
+}
+
+export interface GenerateWithToolsOptions extends GenerateTextOptions {
+    tools : ToolDefinition[];
+}
+
 export interface ChatMessage {
     role : MessageRole;
-    content : string;
+    content : string | null;
     toolCallId? : string;
-    name? : string
+    toolCalls? : ToolCall[];
+    name? : string;
 }
 
 export interface GenerateTextOptions {
@@ -42,6 +59,14 @@ export interface LLMResponse {
     finishReason? : string;
 }
 
+export interface LLMToolResponse {
+    content : string | null;
+    toolCalls : ToolCall[];
+    model : string;
+    finishReason? : string;
+    usage? : LLMUsage;
+}
+
 export interface StreamChunk {
     delta : string;
     done : boolean;
@@ -57,4 +82,5 @@ export interface LLMProvider {
     generateStructured<T>(
         options : GenerateStructuredOptions<T>
     ) : Promise<LLMStructuredResponse<T>>;
+    generateWithTools(options : GenerateWithToolsOptions) : Promise<LLMToolResponse>;
 }

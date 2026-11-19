@@ -5,3 +5,4 @@ coverage
 src/generated
 .stryker-tmp
 reports
+concepts

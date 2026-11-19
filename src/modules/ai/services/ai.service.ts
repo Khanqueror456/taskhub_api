@@ -4,6 +4,8 @@ import { buildCopilotSystemPrompt, CopilotPromptContext } from "../prompts/syste
 import { applyTokenBudget } from "../utils/token-budget.js";
 import { ChatRequestInput } from "../schemas/chat.schema.js";
 
+import { genereatedTaskPlanJsonSchema, generatedTaskPlanSchema, GenerateTasksRequestInput } from "../schemas/structured-output.schema.js";
+
 export class AIService{
     constructor(private readonly provider : LLMProvider) {};
 
@@ -47,6 +49,29 @@ export class AIService{
         const messages = applyTokenBudget(systemMessage, input.history, userMessage, 4000);
         return this.provider.streamText({ messages, signal });
     }
+
+  async generateTasks(input : GenerateTasksRequestInput, context : CopilotPromptContext) {
+    return this.provider.generateStructured({
+      schemaName : 'taskhub_generated_task_plan',
+      jsonSchema : genereatedTaskPlanJsonSchema,
+      zodSchema : generatedTaskPlanSchema,
+      messages : [
+        {
+          role : 'system',
+          content : [
+            buildCopilotSystemPrompt(context),
+            '',
+            `Break the user's goal into at most ${input.maxTasks} concrete, actionable tasks`,
+            'Use only priorities LOW, MEDIUM, or HIGH',
+          ].join('\n'),
+        },
+        {
+          role : 'user',
+          content : input.goal,
+        }
+      ]
+    });
+  }
 }
 
 

@@ -1,8 +1,10 @@
 import OpenAI from 'openai';
 import {
+  GenerateStructuredOptions,
   GenerateTextOptions,
   LLMProvider,
   LLMResponse,
+  LLMStructuredResponse,
   StreamChunk,
 } from './llm.provider.js';
 
@@ -121,5 +123,54 @@ export class GroqProvider implements LLMProvider {
     }
 
     yield { delta : '', done : true, model : lastModel, finishReason : lastFinishReason };
+  }
+
+
+  // Inside GroqProvider:
+
+  async generateStructured<T>(options: GenerateStructuredOptions<T>): Promise<LLMStructuredResponse<T>> {
+    
+    const completion = await this.client.chat.completions.create(
+      {
+        model : this.model,
+        messages : options.messages.map((m) => ({
+          role : m.role as 'system' | 'user' | 'assistant',
+          content : m.content
+
+        })),
+        temperature : options.temperature ?? 0.2,
+        max_tokens : options.maxTokens ?? this.defaultMaxTokens,
+        response_format : {
+          type : 'json_schema',
+          json_schema : {
+            name : options.schemaName,
+            strict : true,
+            schema : options.jsonSchema
+          }
+        }
+      },
+      { signal : options.signal }
+    );
+
+    const choice = completion.choices[0];
+    const content = choice?.message?.content;
+
+    if (!content) {
+      throw new Error('Groq returned an empty structured response');
+    }
+
+    const parsedJson = JSON.parse(content);
+    const validatedData = options.zodSchema.parse(parsedJson);
+
+    return {
+      data : validatedData,
+      model : completion.model,
+      finishReason : choice.finish_reason ?? undefined,
+      usage : completion.usage ? {
+        promptTokens : completion.usage.prompt_tokens,
+        completionTokens : completion.usage.completion_tokens,
+        totalTokens : completion.usage.total_tokens,
+      } : undefined,
+    };
   }
 }

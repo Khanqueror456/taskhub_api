@@ -1,4 +1,3 @@
-import { parse } from "node:path";
 import { ToolCall } from "../providers/llm.provider.js";
 import { ToolExecutionContext, ToolRegistery } from "./tool.registry.js";
 

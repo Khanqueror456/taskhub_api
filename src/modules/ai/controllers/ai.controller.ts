@@ -2,41 +2,45 @@ import { Request, Response, NextFunction } from 'express';
 import { chatRequestSchema } from '../schemas/chat.schema.js';
 import { AIService } from '../services/ai.service.js';
 import { generateTasksRequestSchema } from '../schemas/structured-output.schema.js';
+import { error } from 'node:console';
+import { ToolCallingService } from '../services/tool-calling.service.js';
 
 const orgId = (req: Request) => req.membership!.organizationId;
 const targetUserId = (req: Request) => req.params.userId as string;
-const targetUserRole = (req : Request) => req.membership!.role;
+const targetUserRole = (req: Request) => req.membership!.role;
 
 export class AIController {
-    constructor(private readonly aiService : AIService) {}
+    constructor(private readonly aiService: AIService,
+        private readonly toolCallingService: ToolCallingService
+    ) { }
 
-    chat = async (req : Request, res : Response, next : NextFunction) => {
+    chat = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const parsed = chatRequestSchema.safeParse(req.body);
-            if(!parsed.success) {
+            if (!parsed.success) {
                 return res.status(400).json({
-                    error : 'Validation failed',
-                    details : parsed.error.flatten(),
+                    error: 'Validation failed',
+                    details: parsed.error.flatten(),
                 })
             }
 
-            const result = await this.aiService.chat(parsed.data, {organizationId : orgId(req), userId : targetUserId(req), userRole : targetUserRole(req)});
-            return res.status(200).json({ data : result });
-            
-        } catch(error) {
+            const result = await this.aiService.chat(parsed.data, { organizationId: orgId(req), userId: targetUserId(req), userRole: targetUserRole(req) });
+            return res.status(200).json({ data: result });
+
+        } catch (error) {
             return next(error);
         }
     }
 
-    chatStream = async (req : Request, res : Response, next : NextFunction) => {
+    chatStream = async (req: Request, res: Response, next: NextFunction) => {
 
         try {
             const parsed = chatRequestSchema.safeParse(req.body);
 
             if (!parsed.success) {
                 return res.status(400).json({
-                    error : 'Validation failed',
-                    details : parsed.error.flatten(),
+                    error: 'Validation failed',
+                    details: parsed.error.flatten(),
                 });
             }
 
@@ -49,9 +53,9 @@ export class AIController {
             const stream = this.aiService.chatStream(
                 parsed.data,
                 {
-                    organizationId : orgId(req),
-                    userId : targetUserId(req),
-                    userRole : targetUserRole(req),
+                    organizationId: orgId(req),
+                    userId: targetUserId(req),
+                    userRole: targetUserRole(req),
                 },
                 abortController.signal
             );
@@ -71,11 +75,11 @@ export class AIController {
 
                 if (!abortController.signal.aborted)
                     res.write('data: [DONE]\n\n');
-                
+
             } catch (streamError) {
-                if(!abortController.signal.aborted) {
-                    const message = 
-                    streamError instanceof Error ? streamError.message : 'Streaming failed';
+                if (!abortController.signal.aborted) {
+                    const message =
+                        streamError instanceof Error ? streamError.message : 'Streaming failed';
                     res.write(`event: error\ndata: ${JSON.stringify({ message })}\n\n`);
                 }
             } finally {
@@ -83,31 +87,55 @@ export class AIController {
                     res.end();
                 }
             }
-            
+
         } catch (error) {
-            
+
             return next(error);
         }
     }
 
-    generateTasks = async (req : Request, res : Response, next : NextFunction) => {
+    generateTasks = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const parsed = generateTasksRequestSchema.safeParse(req.body);
-            if(!parsed.success) {
+            if (!parsed.success) {
                 return res.status(400).json({
-                    error : 'Validation failed',
-                    details : parsed.error.flatten(),
+                    error: 'Validation failed',
+                    details: parsed.error.flatten(),
                 });
             }
 
             const result = await this.aiService.generateTasks(parsed.data, {
-                organizationId : orgId(req),
-                userId : targetUserId(req),
-                userRole : targetUserRole(req),
+                organizationId: orgId(req),
+                userId: targetUserId(req),
+                userRole: targetUserRole(req),
             });
 
             return res.status(200).json({ data: result.data, meta: { model: result.model, usage: result.usage } });
-            
+
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+
+    assistant = async (req: Request, res: Response, next: NextFunction) => {
+
+        try {
+            const parsed = chatRequestSchema.safeParse(req.body);
+
+            if (!parsed.success) {
+
+                return res.status(400).json({
+                    error: 'Validation failed',
+                    detials: parsed.error.flatten()
+                })
+            }
+
+            const result = this.toolCallingService.run(parsed.data, {
+                organizationId: orgId(req),
+                userId: targetUserId(req),
+                userRole: targetUserRole(req),
+            })
         } catch (error) {
             return next(error);
         }

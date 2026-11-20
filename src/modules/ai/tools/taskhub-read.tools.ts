@@ -1,4 +1,4 @@
-import { properties, uuid, z } from 'zod';
+import { z } from 'zod';
 import { prisma } from '../../../lib/prisma.js';
 import { ToolRegistry } from './tool.registry.js';
 import { TaskPriority, TaskStatus } from '../../../generated/prisma/enums.js';
@@ -45,16 +45,18 @@ export function registerTaskHubReadTools(registry: ToolRegistry): void {
             type: 'object',
             additionalProperties: false,
             properties: {
-                projectId: { type: uuid, description: "The projectId of the task" },
-                status: { type: TaskStatus, description: "The status of the project" },
-                priority: { type: TaskPriority, description: "The priority of the task" },
+                projectId: { type: 'string', description: 'Optional project UUID' },
+                status: { type: 'string', enum: ['TODO', 'IN_PROGRESS', 'DONE'], description: 'Filter by task status' },
+                priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH'], description: 'Filter by task priority' },
+                limit: { type: 'number', description: 'Max projects to return (1-20, default 10)' }
             }
         },
 
         argsSchema: z.object({
             projectId: z.uuid().optional(),
-            status: z.enum(['TODO', 'IN_PROGRESS', 'DONE']).default('TODO'),
-            priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).default('HIGH')
+            status: z.enum(['TODO', 'IN_PROGRESS', 'DONE']).optional(),
+            priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+            limit: z.number().int().min(1).max(20).optional().default(10),
         }),
 
         execute: async (args, ctx) => {
@@ -62,9 +64,11 @@ export function registerTaskHubReadTools(registry: ToolRegistry): void {
             const tasks = await prisma.task.findMany({
                 where: {
                     organizationId: ctx.organizationId,
-                    status: args.status,
-                    priority: args.priority,
+                    ...(args.projectId && { projectId : args.projectId}),
+                    ...(args.status && { status : args.status } ),
+                    ...(args.priority && { priority : args.priority }),
                 },
+                take : args.limit,
                 orderBy: { createdAt: 'desc' },
                 select: {
                     id: true,
@@ -89,18 +93,23 @@ export function registerTaskHubReadTools(registry: ToolRegistry): void {
         parameters: {
             type: 'object',
             additionalProperties: false,
-            properties: {}
+            properties: {
+                limit: { type: 'number', description: 'Max projects to return (1-20, default 10)' }
+            }
         },
-        argsSchema: z.object({}),
+        argsSchema: z.object({
+            limit: z.number().int().min(1).max(20).optional().default(10),
+        }),
 
         execute: async (args, ctx) => {
 
             const overdue_tasks = await prisma.task.findMany({
                 where: {
                     organizationId: ctx.organizationId,
-                    dueDate: { $lt: new Date() }
+                    dueDate: { lt: new Date() },
+                    status : { not : 'DONE' }
                 },
-
+                take : args.limit,
                 orderBy: { dueDate: 'asc' },
 
                 select: {

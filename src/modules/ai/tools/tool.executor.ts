@@ -1,8 +1,8 @@
 import { ToolCall } from "../providers/llm.provider.js";
-import { ToolExecutionContext, ToolRegistery } from "./tool.registry.js";
+import { ToolExecutionContext, ToolRegistry } from "./tool.registry.js";
 
 export class ToolExecutor {
-    constructor(private readonly registry : ToolRegistery) {}
+    constructor(private readonly registry : ToolRegistry) {}
 
     async execute(toolCall : ToolCall, ctx : ToolExecutionContext) : Promise<string> {
         const tool = this.registry.get(toolCall.name);

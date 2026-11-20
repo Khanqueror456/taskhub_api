@@ -15,7 +15,7 @@ export interface RegisteredTool<TArgs = any> {
     execute : (args : TArgs, ctx : ToolExecutionContext) => Promise<unknown>;
 }
 
-export class ToolRegistery {
+export class ToolRegistry {
     private readonly tools = new Map<string, RegisteredTool>();
 
     register<TArgs>(tool : RegisteredTool<TArgs>) : void {

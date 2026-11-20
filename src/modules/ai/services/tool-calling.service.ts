@@ -3,7 +3,7 @@ import { buildCopilotSystemPrompt } from "../prompts/system.prompt.js";
 import { ChatMessage, LLMProvider, LLMUsage } from "../providers/llm.provider.js";
 import { ChatRequestInput } from "../schemas/chat.schema.js";
 import { ToolExecutor } from "../tools/tool.executor.js";
-import { ToolExecutionContext, ToolRegistery } from "../tools/tool.registry.js";
+import { ToolExecutionContext, ToolRegistry } from "../tools/tool.registry.js";
 import { applyTokenBudget } from "../utils/token-budget.js";
 
 export interface AssistantResponse {
@@ -17,7 +17,7 @@ export interface AssistantResponse {
 export class ToolCallingService {
     constructor(
         private readonly provider : LLMProvider,
-        private readonly registry : ToolRegistery,
+        private readonly registry : ToolRegistry,
         private readonly executor : ToolExecutor,
         private readonly maxIterations = 5
     ) {}

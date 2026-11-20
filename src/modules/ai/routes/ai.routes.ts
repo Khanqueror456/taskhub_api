@@ -57,6 +57,6 @@ router.use(authenticate);
 router.post('/chat', validate({ params : orgParams, body : chatRequestSchema}), authorize('org:read'), aiController.chat);
 router.post('/chat/stream', validate({ params : orgParams, body : chatRequestSchema}), authorize('org:read'), aiController.chatStream);
 router.post('/generate-tasks', validate({ params : orgParams }), authorize('org:read'), aiController.generateTasks);
-router.post('/assistant', aiController.assistant);
+router.post('/assistant', validate({ params : orgParams }), authorize('org:read'), aiController.assistant);
 
 export default router;

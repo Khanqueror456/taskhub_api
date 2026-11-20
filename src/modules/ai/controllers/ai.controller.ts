@@ -131,11 +131,13 @@ export class AIController {
                 })
             }
 
-            const result = this.toolCallingService.run(parsed.data, {
+            const result = await this.toolCallingService.run(parsed.data, {
                 organizationId: orgId(req),
                 userId: targetUserId(req),
                 userRole: targetUserRole(req),
             })
+
+            return res.status(200).json({ data : result });
         } catch (error) {
             return next(error);
         }

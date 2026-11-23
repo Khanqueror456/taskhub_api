@@ -233,5 +233,25 @@ const OPERATIONS : Operation[] = [
         id : 'deleteTask', method : 'delete', path : '/orgs/{orgId}/tasks/{taskId}', tag : 'Tasks', summary : 'Delete a task',
         params : taskParams, permission : 'task:write',
         success : { status : 204, description : 'Deleted' },
-    }
+    },
+
+
+    //------------Comments-------------
+    {
+        id : 'listComments', method : 'get', path : '/orgs/{orgId}/tasks/{taskId}/comments', tag : 'Comments', summary : 'List comments',
+        description : 'Oldest first, cursor pagination.',
+        params : taskParams, query : listCommentsQuery, permission : 'task:read',
+        success : { status : 200, model : 'CommentPage', description : 'A page of comments' },
+    },
+    {
+        id : 'createComment', method : 'post', path : '/orgs/{orgId}/tasks/{taskId}/comments', tag : 'Comments', summary : 'Add a comment',
+        params : taskParams, body : createCommentSchema, permission : 'task:write',
+        success : { status : 201, model : 'Comment', description : 'Comment added' },
+    },
+    {
+        id : 'deleteComment', method : 'delete', path : '/orgs/{orgId}/tasks/{taskId}/comments/{commentId}', tag : 'Comments', summary : 'Delete a comment',
+        description : 'Authors can delete their own comments. ADMIN and OWNER can delete any.',
+        params : commentParams, permission : 'task:write',
+        success : { status : 204, description : 'Deleted' },
+    },
 ]

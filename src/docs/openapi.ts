@@ -204,4 +204,34 @@ const OPERATIONS : Operation[] = [
         params : projectParams, permission : 'project:write',
         success : { status : 204, description : 'Deleted' },
     },
+
+    // ---------------------Tasks------------------
+    {
+        id : 'listTaks', method : 'get', path : '/orgs/{orgId}/tasks', tag : 'Tasks', summary : 'List and search tasks',
+        description : 'Cursor pagination with filtering, sorting and full-text search. `assignee` accepts a user id, `me`, or `unassigned`. `overdue=true` means past due and not DONE',
+        params : orgParams, query : listTasksQuery, permission : 'task:read',
+        success : { status : 200, model : 'TaskPage', description : 'A page of tasks' },
+    },
+    {
+        id : 'createTask', method : 'post', path : '/orgs/{orgId}/tasks', tag : 'Tasks', summary : 'Create a task',
+        description : 'The project and the assignee must belong to this organization.',
+        params : orgParams, body : createTaskSchema, permission : 'task:write',
+        success : { status : 201, model : 'Task', description : 'Task created' },
+    },
+    {
+        id : 'getTask', method : 'get', path : '/orgs/{orgId}/tasks/{taskId}', tag : 'Tasks', summary : 'Get a task',
+        params : taskParams, permission : 'task:read',
+        success : { status : 200, model : 'Task', description : 'The task' },
+    },
+    {
+        id : 'updateTask', method : 'patch', path : '/orgs/{orgId}/tasks/{taskId}', tag : 'Tasks', summary : 'Update a task',
+        description : 'Send only the fields to change. Send `null` to clear the assignee, description, or due date.',
+        params : taskParams, body : updateTaskSchema, permission : 'task:write',
+        success : { status : 200, model : 'Task', description : 'The upated task' },
+    },
+    {
+        id : 'deleteTask', method : 'delete', path : '/orgs/{orgId}/tasks/{taskId}', tag : 'Tasks', summary : 'Delete a task',
+        params : taskParams, permission : 'task:write',
+        success : { status : 204, description : 'Deleted' },
+    }
 ]

@@ -116,7 +116,7 @@ export const models = {
     AcceptedInvitation : z.object({ organizationId : id, role }),
     Project : project,
     ProjectPage : z.object({ data : z.array(project), pagination : offsetPagination }),
-    Taks : task,
+    Task : task,
     TaskPage : z.object({ data : z.array(task), pagination : cursorPagination }),
     Comment : comment,
     CommentPage : z.object({ data : z.array(comment), pagination : cursorPagination }),

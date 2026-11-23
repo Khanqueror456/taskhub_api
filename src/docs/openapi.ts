@@ -14,7 +14,7 @@ export const API_VERSION = '1.0.0';
 
 type Json = Record<string, unknown>;
 type Tag = 
-    | 'Health' | 'Auth' | 'Organization' | 'Members' | 'Invitations' | 'Projects'
+    | 'Health' | 'Auth' | 'Organizations' | 'Members' | 'Invitations' | 'Projects'
     | 'Tasks' | 'Comments' | 'Audit';
 
 interface Operation {
@@ -34,3 +34,120 @@ interface Operation {
     errors? : number[]; // in addition to the ones derived automatically
 
 }
+
+const TAGS = [
+    { name : 'Health', description : 'Liveness and dependency status' },
+    { name : 'Auth', description : 'Accounts and sessions' },
+    { name : 'Organizations', description : 'Tenants' },
+    { name : 'Members', descriptions : 'Who belongs to an organization, and with which role' },
+    { name : 'Invitations', description : 'Inviting people by email' },
+    { name : 'Tasks', description : 'The work itself' },
+    { name : 'Comments', description : 'Discussion on a task' },
+    { name : 'Audit', description : 'Append=only history of every change' },
+];
+
+const DESCRIPTION = `
+    Multi-tenant task management API. Each organization's data is isolated from every other's
+
+    ## Authentication
+    Register or log in to receive an **access token** (valid 15 minutes) and a single-use **refresh token** (7 days). Send the access token as \`Authorization: Bearer <token>\`. Exchange the refresh token at \`POST /auth/refresh\` for a new pair.
+
+
+    ## Organizations and roles
+    Routes under \`/orgs/{orgId}\` required membership. Callers who are not members get **404**, never 403, so organization ids cannot be probed. Roles are VIEWER < MEMBER < ADMIN < OWNER, and each operation states the permission it needs and which roles hold it.
+    
+    ## Pagination
+    Projects use \`page\` and \`limit\`. Tasks, comments and audit logs use cursors: pass the previous reponse's \`pagination.nextCursor\` as \`cursor\`.
+
+    ## Errors and rate limits
+    Every error has the shape \`{ "error" : { "code" , "message", "details?", "requestId" }}\`, and the same id is returned in the \`x-request-id\` header. Limits are reported in \`RateLimit-*\` headers, and exceeding one return **429** with \'Retry-After\`.
+`.trim();
+
+const ERROR_RESPONSES : Record<number, { name : string, description : string }> = {
+
+    400 : { name : 'BadRequest', description : 'The request failed validation. `error.details` lists each invalid field and where it was.' },
+    401 : { name : 'Unauthorized', description : 'Missing, invalid or expired credentials.' },
+    403 : { name : 'Forbidden', description : "The caller's role does not hold the required permission." },
+    404 : { name : 'NotFound', description : 'The resources does not exist, or the caller is not member of the organization (the two are deliberately indistinguishable).' },
+    409 : { name : 'Conflict', description : 'The request conflicts with existing data.' },
+    410 : { name : 'Gone', description : 'The invitation was revoked, has expired, or was already used.'},
+    429 : { name : 'TooManyRequests', description : 'Rate limit exceeded. See the Retry-After header.' },
+    503 : { name : 'ServiceUnavailable', description : 'The database is unreachable.' }
+};
+
+const OPERATIONS : Operation[] = [
+    // -------------Health---------------
+    {
+        id : 'getHealth', method : 'get', path : '/health', tag : 'Health', summary : 'Service health',
+        description : 'Reports database and Redis status. Only a database outage return 503; a Redis outage is "degraded", because the API keeps working without it.',
+        public : true, outsideApiPrefix : true,
+        success : { status : 200, model : 'Health', description : 'The service is up (possibly degraded)' },
+        errors : [503],
+    },
+
+    // --------------Auth-------------
+    {
+        id : 'registerUser', method : 'post', path : '/auth/register', tag : 'Auth', summary : 'Create an account',
+        description : 'Returns the new user and a token pair. Limited to 20 requests per 15 minutes per IP.',
+        public : true, body : registerSchema,
+        success : { status : 201, model : 'Session', description : 'Account created' },
+        errors : [409, 429],
+    },
+    {
+        id : 'loginUser', method : 'post', path : '/auth/login', tag : 'Auth', summary : 'Sign in',
+        description : 'Limited to 20 requests per 15 minutes per IP and 10 per 15 minutes per email. An unkown email and a wrong password produce the same 401.',
+        public : true, body : loginSchema,
+        success : { status : 200, model : 'Session', description : 'Signed in' },
+    },
+    {
+        id : 'refreshSession', method : 'post', path : '/auth/refresh', tag : 'Auth', summary : 'Rotate the token pair',
+        description : 'A refresh token works once. Presenting an already-used one revokes the whole session.',
+        public : true, body : refreshSchema,
+        success : { status : 200, model : 'Tokens', description : 'New token pair' },
+        errors : [401, 429],
+    },
+    {
+        id : 'logoutUser', method : 'post', path : '/auth/logout', tag : 'Auth', summary : 'Revoke a refresh token',
+        description : 'Always succeeds, even for unknown or already revoked tokens.',
+        public : true, body : refreshSchema,
+        success : { status : 204, description : 'Logged out' },
+        errors : [429],
+    },
+    {
+        id : 'getCurrentuser', method : 'get', path : '/auth/me', tag : 'Auth', summary : 'The signed-in user',
+        success : { status : 200, model : 'Me', description : 'The current user' },
+    },
+
+    // ---------------Organizations--------------
+
+    {
+        id : 'createOrganization', method : 'post', path : '/orgs', tag : 'Organizations', summary : 'Create an organization',
+        description : 'The caller becomes its OWNER.', body :  createOrgSchema,
+        success : { status : 201, model : 'OrganizationWithRole', description : 'Organization created' },
+    },
+    {
+        id : 'listMyOrganizations', method : 'get', path : '/orgs', tag : 'Organizations', summary : 'List my organizations',
+        success : { status : 200, model : 'OrganizationList', description : 'Organizations the caller belongs to, with their role' },
+    },
+    {
+        id : 'getOrganization', method : 'get', path : '/orgs/{orgId}', tag : 'Organizations', summary : 'Get an organization',
+        params : orgParams, permission : 'org:read',
+        success : { status : 200, model : 'OrganizationWithRole', description : 'The organization and the caller\'s role' },
+    },
+    {
+        id : 'updateOrganization', method : 'patch', path : '/orgs/{orgId}', tag : 'Organizations', summary : 'Rename an organization',
+        params : orgParams, body : updateOrgSchema, permission : 'org:update',
+        success : { status : 200, model : 'Organization', description : 'The updated organization' },
+    },
+    {
+        id : 'deletedOrganization', method : 'delete', path : '/orgs/{orgId}', tag : 'Organizations', summary : 'Delete an organization',
+        description : 'Deletes everything inside it. Its audit hsitory is kept.',
+        params : orgParams, permission : 'org:delete',
+        success : { status : 204, description : 'Deleted' },
+    },
+    
+
+    // ---------------Members--------------
+
+    
+]

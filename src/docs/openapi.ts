@@ -254,4 +254,13 @@ const OPERATIONS : Operation[] = [
         params : commentParams, permission : 'task:write',
         success : { status : 204, description : 'Deleted' },
     },
-]
+
+
+    // -----------------Audit------------------
+    {
+        id : 'listAuditLogs', method : 'get', path : '/orgs/{orgId}/audit-logs', tag : 'Audit', summary : 'Read the audit log',
+        description : 'Newest first, cursor pagination. Filter by entity, actor or action to see the history of one thing.',
+        params : orgParams, query : listAuditQuery, permission : 'audit:read',
+        success : { status : 200, model : 'AuditLogPage', description : 'A page of audit entries' },
+    },
+];

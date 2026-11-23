@@ -149,5 +149,28 @@ const OPERATIONS : Operation[] = [
 
     // ---------------Members--------------
 
-    
+    {
+        id : 'listMembers', method : 'get', path : '/orgs/{orgId}/members', tag : 'Members', summary : 'List members',
+        params : orgParams, permission : 'member:read',
+        success : { status : 200, model : 'MemberList', description : 'Members of the organization' },
+    },
+    {
+        id : 'addMember', method : 'post', path : '/orgs/{orgId}/members', tag : 'Members', summary : 'Add an existing user',
+        description : 'Adds a registered user by email. To bring in someone without an account, use an invitation.',
+        params : orgParams, body : addMemberSchema, permission : 'member:manage',
+        success : { status : 201, model : 'Member', description : 'Member added' },
+        errors : [409],
+    },
+    {
+        id : 'updateMemberRole', method : 'patch', path : '/orgs/{orgId}/members/{userId}', tag : 'Members', summary : 'Change a member\'s role',
+        description : "The OWNER's role cannot be changed (403).",
+        params : memberParams, body : updateMemberSchema, permission : 'member:manage',
+        success : { status : 200, model : 'Member', description : 'The updated member' },
+    },
+    {
+        id :'removeMember', method : 'delete', path : '/orgs/{orgId}/members/{userId}', tag : 'Members', summary : "Remove a member",
+        description : "Also unassigns the member's tasks in this organization. The OWNER cannot be removed (403)",
+        params : memberParams, permission : 'member:manage',
+        success : { status : 204, description : 'Removed' },
+    },
 ]

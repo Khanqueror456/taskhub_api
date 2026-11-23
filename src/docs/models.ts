@@ -124,4 +124,4 @@ export const models = {
     AuditLogPage : z.object({ data : z.array(auditLog), pagination : cursorPagination }),
 }
 
-export type Modelname = keyof typeof models;
+export type ModelName = keyof typeof models;

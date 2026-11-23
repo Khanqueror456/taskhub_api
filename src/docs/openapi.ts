@@ -173,4 +173,35 @@ const OPERATIONS : Operation[] = [
         params : memberParams, permission : 'member:manage',
         success : { status : 204, description : 'Removed' },
     },
+
+
+    // -----------Projects-------------
+
+    {
+        id : 'listProjects', method : 'get', path : '/orgs/{orgId}/projects', tag : 'Projects', summary : 'List projects',
+        description : 'Offset pagination, newest first.',
+        params : orgParams, query : listProjectsQuery, permission : 'project:read',
+        success : { status : 200, model : 'ProjectPage', description : 'A page of projects' },
+    },
+    {
+        id : 'createProject', method : 'post', path : '/orgs/{orgId}/projects', tag : 'Projects', summary : 'Create a project',
+        params : orgParams, body : createProjectSchema, permission : 'project:write',
+        success : { status : 201, model : 'Project', description : 'Project created' },
+    },
+    {
+        id : 'getProject', method : 'get', path : '/orgs/{orgId}/projects/{projectId}', tag : 'Projects', summary : "Get a project",
+        params : projectParams, permission : 'project:read',
+        success : { status : 200, model : 'Project', description : 'The project' },
+    },
+    {
+        id : 'updateProject', method : 'patch', path : '/orgs/{orgId}/projects/{projectId}', tag : 'Projects', summary : 'Update a project',
+        params : projectParams, body : updateProjectSchema, permission : 'project:write',
+        success : { status : 200, model : 'Project', description : 'The updated project' },
+    },
+    {
+        id : 'deleteProject', method : 'delete', path : '/orgs/{orgId}/projects/{projectId}', tag : 'Projects', summary : 'Delete a project',
+        description : 'Deletes the project and all of its tasks.',
+        params : projectParams, permission : 'project:write',
+        success : { status : 204, description : 'Deleted' },
+    },
 ]

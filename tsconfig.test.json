@@ -6,6 +6,6 @@
     "emitDeclarationOnly": true,
     "outDir": ".ts-test-cache"
   },
-  "include": ["src", "tests"],
+  "include": ["src", "tests", "scripts/export-openapi.ts"],
   "composite" : true
 }

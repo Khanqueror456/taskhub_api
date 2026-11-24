@@ -11,6 +11,6 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["src"],
+  "include": ["src", "scripts/export-openapi.ts"],
   "references": [{ "path": "./tsconfig.test.json" }]
 }

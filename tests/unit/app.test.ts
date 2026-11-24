@@ -51,7 +51,7 @@ describe('invitation routes are mounted and protected', () => {
   });
 
   it('keeps answering unknown routes with the standard 404 and a request id', async () => {
-    const res = await request(app).get('/api/v1/invitations/nope');
+    const res = await request(app).get('/api/v1/invitations/nope').set(signedIn);
 
     expect(res.status).toBe(404);
     expect(res.headers['x-request-id']).toBeTruthy();

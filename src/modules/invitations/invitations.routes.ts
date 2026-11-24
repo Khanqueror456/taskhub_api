@@ -13,12 +13,10 @@ import {
 
 // Org-scoped : managing invitations needs member:manage (ADMIN and OWNER)
 export const invitationRouter = Router({ mergeParams : true });
-// invitationRouter.use(authenticate, apiLimiter);
+invitationRouter.use(authenticate, apiLimiter);
 
 invitationRouter.post(
     '/',
-    authenticate, 
-    apiLimiter,
     validate({ params : orgParams, body : createInvitationSchema }),
     authorize('member:manage'),
     c.createInvitation
@@ -28,8 +26,6 @@ invitationRouter.get('/', validate({ params : orgParams }), authorize('member:ma
 
 invitationRouter.delete(
     '/:invitationId',
-    authenticate, 
-    apiLimiter,
     validate({ params : invitationParams }),
     authorize('member:manage'),
     c.revokeInvitation,
@@ -40,8 +36,6 @@ export const acceptInvitationRouter = Router();
 acceptInvitationRouter.use(authenticate);
 acceptInvitationRouter.post(
     '/accept',
-    authenticate, 
-    apiLimiter,
     acceptInviteLimiter,
     validate({ body : acceptInvitationSchema }),
     c.acceptInvitation,

@@ -398,3 +398,5 @@ export function buildOpenApiDocument() {
         }
     }
 }
+
+export const openApiDocument = buildOpenApiDocument();

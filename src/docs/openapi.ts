@@ -363,3 +363,38 @@ function buildOperation(op : Operation) : Json {
         responses,
     };
 }
+
+
+export function buildOpenApiDocument() {
+    const paths : Record<string, Record<string, Json>> = {};
+    for (const op of OPERATIONS) {
+        (paths[op.path] ??= {})[op.method] = buildOperation(op);
+    }
+
+    return {
+        openapi : '3.1.0',
+        info : { title : 'TaskHub API', version : API_VERSION, description : DESCRIPTION },
+        servers : [{ url : `${env.APP_URL}/api/v1`, description : 'API'}],
+        tags : TAGS,
+        paths,
+        components : {
+            securitySchemes : { bearerAuth : { type : 'http', scheme : 'bearer', bearerForm : 'JWT' } },
+            schemas : Object.fromEntries(
+                Object.entries(models).map(([name, schema]) => [name, toSchema(schema, 'output')]),
+            ),
+            responses : Object.fromEntries(
+                Object.entries(ERROR_RESPONSES).map(([status, { name, description }]) => [
+                    name,
+                    {
+                        description,
+                        content : {
+                            'application/json' : {
+                                schema : { $ref : `#/components/schemas/${Number(status) === 503 ? 'Health' : 'Error'}` },
+                            }
+                        }
+                    }
+                ])
+            )
+        }
+    }
+}

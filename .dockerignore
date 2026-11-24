@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+reports
+.stryker-tmp
+.git
+.github
+.env
+.env.*
+!.env.example
+*.md
+tests
+scripts
+src/generated
+Dockerfile
+docker-compose.yml

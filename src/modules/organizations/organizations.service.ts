@@ -103,7 +103,7 @@ export async function updateOrganization(ctx: AuditContext, orgId: string, name:
         if (!before) throw AppError.notFound('Organization not found');
 
         const after = await tx.organization.update({
-            where: { id: orgId, organizationId : orgId },
+            where: { id: orgId },
             data: { name }
         });
 

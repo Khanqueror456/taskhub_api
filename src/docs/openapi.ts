@@ -313,3 +313,17 @@ function describeAccess(op : Operation) : string {
 
     return [op.description, access].filter(Boolean).join('\n\n');
 }
+
+/** The errors every operation can produce, worked out from how it is built. */
+
+function errorStatuses(op : Operation) : number[] {
+    const statuses = new Set<number>(op.errors ?? []);
+    if (op.params || op.query || op.body) statuses.add(400);
+    if (!op.public) {
+        statuses.add(401);
+        statuses.add(429);
+    }
+    if (op.permission) statuses.add(403);
+    if (op.params) statuses.add(404);
+    return [...statuses].sort((a, b) => a - b);
+}

@@ -264,3 +264,25 @@ const OPERATIONS : Operation[] = [
         success : { status : 200, model : 'AuditLogPage', description : 'A page of audit entries' },
     },
 ];
+
+
+// ---------------------------------------------------------------------------
+// Everything below turns the table above into an OpenAPI 3.1 document.
+// ---------------------------------------------------------------------------
+
+function toSchema(schema : z.ZodType, io : 'input' | 'output') :  Json {
+    const json = z.toJSONSchema(schema, {
+        target : 'draft-2020-12',
+        io,
+        unrepresentable : 'any',
+        override : (ctx) => {
+            // JSON has no Date type: dates travel as ISO strings
+            if (ctx.zodSchema._zod.def.type === 'date') {
+                ctx.jsonSchema.type = 'string';
+                ctx.jsonSchema.format = 'date-time';
+            }
+        },
+    }) as Json;
+    delete json.$schema;
+    return json;
+}

@@ -327,3 +327,39 @@ function errorStatuses(op : Operation) : number[] {
     if (op.params) statuses.add(404);
     return [...statuses].sort((a, b) => a - b);
 }
+
+function buildOperation(op : Operation) : Json {
+    const parameters = [
+        ...(op.params ? toParameters(op.params, 'path') : []),
+        ...(op.query ? toParameters(op.query, 'query') : []),
+    ];
+
+    const responses : Record<string, Json> = {
+        [op.success.status] : {
+            description : op.success.description,
+            ...(op.success.model
+                ? { content: { 'application/json': { schema: { $ref: `#/components/schemas/${op.success.model}` } } } }
+                : {}
+            ),
+        },
+    };
+
+    for (const status of errorStatuses(op)) {
+        responses[status] = { $ref : `#/components/responses/${ERROR_RESPONSES[status]}` }
+    }
+
+    return {
+        operationId : op.id,
+        tags : [op.tag],
+        summary : op.summary,
+        description : describeAccess(op),
+        security : op.public ? [] : [{ bearerAuth : [] }],
+        ...(op.outsideApiPrefix ? { servers : [{ url : env.APP_URL }]} : {}),
+        ...(parameters.length ? { parameters } : {}),
+        ...(op.body 
+            ? { requestBody : { required : true, content : { 'application/json' : { schema : toSchema(op.body, 'input')}}}}
+            : {}
+        ),
+        responses,
+    };
+}

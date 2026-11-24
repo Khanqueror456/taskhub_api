@@ -9,6 +9,7 @@ import { addMemberSchema, createOrgSchema, memberParams, orgParams, updateMember
 import { createProjectSchema, listProjectsQuery, projectParams, updateProjectSchema } from '../modules/projects/projects.schema.js';
 import { createTaskSchema, listTasksQuery, taskParams, updateTaskSchema } from '../modules/tasks/tasks.schema.js';
 import { models, type ModelName } from './models.js';
+import { permission } from 'node:process';
 
 export const API_VERSION = '1.0.0';
 
@@ -296,4 +297,19 @@ function toParameters(schema : z.ZodType, where : 'path' | 'query') {
         required : where === 'path' || required.has(name),
         schema : propertySchema
     }));
+}
+
+const rolesFor = (permission : Permission) => 
+    (Object.keys(rolePermissions) as (keyof typeof rolePermissions)[]).filter((role) => 
+        rolePermissions[role].includes(permission),
+    );
+
+function describeAccess(op : Operation) : string {
+    const access = op.public
+    ? 'No authentication requried.'
+    : op.permission
+        ? `Requires permission \`${op.permission}\` (${rolesFor(op.permission).join(', ')}).`
+        : 'Requires a valid access token.';
+
+    return [op.description, access].filter(Boolean).join('\n\n');
 }

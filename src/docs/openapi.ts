@@ -286,3 +286,14 @@ function toSchema(schema : z.ZodType, io : 'input' | 'output') :  Json {
     delete json.$schema;
     return json;
 }
+
+function toParameters(schema : z.ZodType, where : 'path' | 'query') {
+    const json = toSchema(schema, 'input') as { properties? : Record<string, Json>; required? : string[] };
+    const required = new Set(json.required ?? []);
+    return Object.entries(json.properties ?? {}).map(([name, propertySchema]) => ({
+        name,
+        in : where,
+        required : where === 'path' || required.has(name),
+        schema : propertySchema
+    }));
+}

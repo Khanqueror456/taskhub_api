@@ -13,6 +13,9 @@ import { acceptInvitationRouter, invitationRouter } from './modules/invitations/
 import aiRouter from "./modules/ai/routes/ai.routes.js";
 import { env } from './config/env.js';
 import cors from 'cors';
+import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
+import { openApiDocument } from './docs/openapi.js';
 
 export const app = express();
 
@@ -30,6 +33,14 @@ app.set('trust proxy', env.TRUST_PROXY_HOPS)
 
 app.disable('x-powered-by');
 app.use(requestLogger);
+
+// API documentation (before helmet : its CSP would break Swagger UI)
+app.get('/openapi.json', (_req, res) => {
+    res.json(openApiDocument);
+});
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, { customSiteTitle : 'TaskHub API' }));
+
+app.use(helmet());
 app.use(express.json({ limit : '100kb'}));
 
 // Routers

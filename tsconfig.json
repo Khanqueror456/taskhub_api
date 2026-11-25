@@ -3,14 +3,12 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "rootDir": "src",
-    "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node"]
+    "types": ["node"],
+    "noEmit": true
   },
-  "include": ["src", "scripts/export-openapi.ts"],
-  "references": [{ "path": "./tsconfig.test.json" }]
+  "include": ["src", "tests", "scripts"]
 }

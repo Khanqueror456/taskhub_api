@@ -6,3 +6,5 @@ src/generated
 .stryker-tmp
 reports
 concepts
+.ts-test-cache
+*.tsbuildinfo

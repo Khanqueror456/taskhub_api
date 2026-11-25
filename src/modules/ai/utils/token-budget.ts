@@ -1,8 +1,8 @@
 import { ChatMessage } from "../providers/llm.provider.js";
 
 
-export function estimateTokens(text : string) : number {
-    return Math.ceil(text.length / 4);
+export function estimateTokens(text : string | null | undefined) : number {
+    return Math.ceil((text ?? '').length / 4);
 }
 
 export function estimateMessageTokens(messages : ChatMessage[]) : number {

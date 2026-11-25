@@ -17,8 +17,9 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 RUN npm ci
-COPY tsconfig.json ./
+COPY tsconfig*.json ./
 COPY src ./src
+RUN npx prisma generate
 RUN npm run build
 
 # ---- prod-deps: only what the running app needs ----

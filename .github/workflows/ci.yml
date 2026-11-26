@@ -116,6 +116,7 @@ jobs:
           REDIS_URL=redis://localhost:6379
           JWT_ACCESS_SECRET=ci-only-access-secret-0123456789abcdef0123456789
           JWT_REFRESH_SECRET=ci-only-refresh-secret-0123456789abcdef012345678
+          GROQ_API_KEY=${{secrets.GROQ_API_KEY}}
           EOF
       - name: Start the stack
         run: docker compose --profile app up -d --build

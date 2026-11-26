@@ -45,6 +45,13 @@ jobs:
       TEST_REDIS_URL: redis://localhost:6379/1
       JWT_ACCESS_SECRET: ci-only-access-secret-0123456789abcdef0123456789
       JWT_REFRESH_SECRET: ci-only-refresh-secret-0123456789abcdef012345678
+      AI_PROVIDER: groq
+      GROQ_API_KEY: test-groq-key
+      AI_BASE_URL: https://api.groq.com/openai/v1
+      AI_MODEL: openai/gpt-oss-120b
+      AI_MAX_TOKENS: 1500
+      AI_TEMPERATURE: 0.3
+      AI_TIMEOUT_MS: 30000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

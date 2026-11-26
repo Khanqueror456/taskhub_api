@@ -147,7 +147,7 @@ tests/
 - [x] Phase 6: Redis (rate limiting, caching)
 - [x] Phase 7: Background jobs
 - [x] Phase 8: Testing hardening
-- [ ] Phase 9: API docs and CI/CD
+- [x] Phase 9: API docs and CI/CD
 - [ ] Phase 10: Polish and deployment
 
 See [DECISIONS.md](./DECISIONS.md) for the reasoning behind key design choices.

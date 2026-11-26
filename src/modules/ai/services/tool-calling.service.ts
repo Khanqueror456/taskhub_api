@@ -1,4 +1,3 @@
-import { AssistantTool } from "openai/resources/beta.mjs";
 import { buildCopilotSystemPrompt } from "../prompts/system.prompt.js";
 import { ChatMessage, LLMProvider, LLMUsage } from "../providers/llm.provider.js";
 import { ChatRequestInput } from "../schemas/chat.schema.js";

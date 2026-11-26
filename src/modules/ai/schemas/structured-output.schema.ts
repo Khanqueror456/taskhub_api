@@ -1,4 +1,4 @@
-import { properties, z } from 'zod';
+import { z } from 'zod';
 
 export const generateTasksRequestSchema = z.object({
     goal : z.string().trim().min(5, 'Goal must be al teast 5 characters').max(2000),

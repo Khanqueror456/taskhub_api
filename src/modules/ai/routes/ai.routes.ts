@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { AIController } from '../controllers/ai.controller.js';
-import { AIService, createAIService } from '../services/ai.service.js';
+import { AIService } from '../services/ai.service.js';
 import { authenticate } from '../../../middleware/authenticate.js';
 import { validate } from '../../../middleware/validate.js';
 import { chatRequestSchema } from '../schemas/chat.schema.js';

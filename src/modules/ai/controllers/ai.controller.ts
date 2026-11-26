@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { chatRequestSchema } from '../schemas/chat.schema.js';
 import { AIService } from '../services/ai.service.js';
 import { generateTasksRequestSchema } from '../schemas/structured-output.schema.js';
-import { error } from 'node:console';
 import { ToolCallingService } from '../services/tool-calling.service.js';
 
 const orgId = (req: Request) => req.membership!.organizationId;

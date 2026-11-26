@@ -1,7 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { AppError } from "../utils/AppError.js";
 import { Prisma } from '../generated/prisma/client.js';
-import { unknown } from "zod";
 
 export const notFound: RequestHandler = (req, _res, next) => {
     next(AppError.notFound(`Route ${req.method} ${req.path} not found`));

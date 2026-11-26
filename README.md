@@ -148,6 +148,6 @@ tests/
 - [x] Phase 7: Background jobs
 - [x] Phase 8: Testing hardening
 - [x] Phase 9: API docs and CI/CD
-- [ ] Phase 10: Polish and deployment
+- [x] Phase 10: Polish and deployment
 
 See [DECISIONS.md](./DECISIONS.md) for the reasoning behind key design choices.

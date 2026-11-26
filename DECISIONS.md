@@ -499,3 +499,58 @@ per-user and per-organization counters.
 ## 055 - Tests are type-checked and CI runs one command
 **Decision:** `tsconfig.test.json` covers tests and scripts, and `npm run ci` is the single gate.
 **Why:** Untyped tests rot silently. One command means the local check and the pipeline never drift apart.
+
+---
+
+## 056 - OpenAPI is generated from the Zod schemas
+**Decision:** One table of operations in `src/docs/openapi.ts`. Request shapes come from the same Zod schemas that
+validate requests; permissions and roles come from `rolePermissions`; common errors are derived from how
+each operation is built. Response models are defined once in `models.ts`.
+**Why:** Documentation that is derived from the code cannot drift from it.
+**Trade-off:** Operation metadata is still written by hand, so a new endpoint needs a table entry (a test
+lists the whole API surface to make forgetting loud).
+
+---
+
+## 057 - Contract tests tie the docs to the running API
+**Decision:** Integration tests call every documented route unauthenticated (it must exist and answer
+401 if protected), and validate real responses against the documented JSON Schemas with Ajv. Response
+models forbid extra properties.
+**Why:** Catches renamed fields, missing fields and accidentally exposed fields, in either direction.
+
+---
+
+## 058 - A multi-stage, non-root image that can also migrate
+**Decision:** Stages `build` (compile), `prod-deps` (production dependencies only) and `runner`.
+The Prisma CLI is a production dependency and ships in the image, so the same image runs the API,
+the worker (`node dist/worker.js`) and migrations (`prisma migrate deploy`).
+**Why:** Small attack surface, fast cached rebuilds, one artifact to test and deploy.
+**Trade-off:** The image carries the Prisma CLI. The build-time DATABASE_URL is an ARG so it never
+reaches the final image.
+
+---
+
+## 059 - Compose profile for the full stack
+**Decision:** The app services (`migrate`, `api`, `worker`) live behind the `app` profile.
+**Why:** `docker compose up -d` keeps starting only infrastructure for day-to-day development, while
+`docker compose --profile app up --build` runs everything exactly as production would.
+
+---
+
+## 060 - CI runs verify, image build and a container smoke test
+**Decision:** `verify` runs `npm run ci` and the coverage gate against real Postgres and Redis service
+containers; `docker` builds (and on main publishes to GHCR) the image; `smoke` boots the compose stack and
+checks health, docs, registration, and that the worker delivered an email.
+**Why:** Unit and integration tests cannot catch a broken image, a failed migration or a worker that does not start.
+
+---
+
+## 061 - Security headers and docs ordering
+**Decision:** `helmet()` is applied to the API; the docs are registered before it because its CSP blocks
+Swagger UI. `TRUST_PROXY_HOPS` must match the deployment so client IPs are real.
+
+---
+
+## 062 - Dependency updates and branch protection
+**Decision:** Dependabot opens weekly update PRs (npm, Actions, Docker); `main` requires the three CI checks.
+**Why:** Updates arrive as small, tested changes, and nothing broken reaches main.

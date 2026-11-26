@@ -15,7 +15,7 @@ export class ToolExecutor {
 
         try {
             rawArgs = toolCall.argumentsJson ? JSON.parse(toolCall.argumentsJson) : {};
-        } catch (error) {
+        } catch (_error) {
             return JSON.stringify({ error : 'Invalid JSON arguments from model'});
         }
 

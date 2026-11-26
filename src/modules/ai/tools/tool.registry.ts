@@ -7,7 +7,7 @@ export interface ToolExecutionContext {
     userRole : 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
 }
 
-export interface RegisteredTool<TArgs = any> {
+export interface RegisteredTool<TArgs = unknown> {
     name : string;
     description : string;
     parameters : Record<string, unknown>;
@@ -19,7 +19,11 @@ export class ToolRegistry {
     private readonly tools = new Map<string, RegisteredTool>();
 
     register<TArgs>(tool : RegisteredTool<TArgs>) : void {
-        this.tools.set(tool.name, tool);
+        this.tools.set(tool.name, {
+            ...tool,
+            argsSchema : tool.argsSchema as z.ZodType<unknown>,
+            execute : (args, ctx) => tool.execute(args as TArgs, ctx),
+        });
     }
 
     get(name : string) : RegisteredTool | undefined {

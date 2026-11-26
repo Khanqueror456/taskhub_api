@@ -4,7 +4,7 @@ import { AppError } from '../../utils/AppError.js';
 import { cursorPage } from '../../utils/pagination.js';
 import { hasPermission } from '../rbac/permissions.js';
 import type { ListCommentsQuery } from './comments.schema.js';
-import { changedFields, recordAudit, type AuditContext } from '../audit/audit.recorder.js';
+import { recordAudit, type AuditContext } from '../audit/audit.recorder.js';
 
 
 async function assertTaskInOrg(orgId : string, taskId : string, db : Prisma.TransactionClient = prisma) {

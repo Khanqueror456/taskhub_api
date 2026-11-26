@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '../../../lib/prisma.js';
 import { ToolRegistry } from './tool.registry.js';
-import { TaskPriority, TaskStatus } from '../../../generated/prisma/enums.js';
 
 export function registerTaskHubReadTools(registry: ToolRegistry): void {
 

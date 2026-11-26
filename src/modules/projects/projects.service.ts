@@ -4,7 +4,6 @@ import { AppError } from "../../utils/AppError.js";
 import { offsetMeta } from "../../utils/pagination.js";
 import type { ListProjectsQuery } from "./projects.schema.js";
 import { changedFields, recordAudit, type AuditContext } from '../audit/audit.recorder.js';
-import { deleteTask } from "../tasks/tasks.service.js";
 
 
 export function createProject(ctx : AuditContext, orgId : string, input : { name : string; description? : string}) {

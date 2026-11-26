@@ -1,7 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { AppError } from "../utils/AppError.js";
 import { Prisma } from '../generated/prisma/client.js';
-import { unknown } from "zod";
 
 export const notFound: RequestHandler = (req, _res, next) => {
     next(AppError.notFound(`Route ${req.method} ${req.path} not found`));
@@ -9,8 +8,6 @@ export const notFound: RequestHandler = (req, _res, next) => {
 
 
 // Express recognises error handlers by their 4 arguments, so `_next` must stay
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
 
     let status = 500;

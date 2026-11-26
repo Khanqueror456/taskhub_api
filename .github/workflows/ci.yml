@@ -56,7 +56,7 @@ jobs:
         run: npm run ci
       - name: Coverage thresholds
         run: npm run test:coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage

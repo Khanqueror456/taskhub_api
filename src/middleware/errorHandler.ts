@@ -8,8 +8,6 @@ export const notFound: RequestHandler = (req, _res, next) => {
 
 
 // Express recognises error handlers by their 4 arguments, so `_next` must stay
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
 
     let status = 500;

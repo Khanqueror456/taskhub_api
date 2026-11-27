@@ -10,8 +10,6 @@ RUN apt-get update -y \
 
 # ---- build: all dependencies, compile TypeScript ----
 FROM base AS build
-# Prisma reads this while generating the client but never connects, so a placeholder is enough.
-# ARG (not ENV) means it does not leak into the final image.
 ARG DATABASE_URL="postgresql://build:build@localhost:5432/build"
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
@@ -34,10 +32,11 @@ RUN npm ci --omit=dev && npm cache clean --force
 FROM base AS runner
 ENV NODE_ENV=production
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+# Copy Prisma CLI + engines from build so `prisma migrate deploy` works without devDependencies
+COPY --from=build --chown=node:node /app/node_modules/prisma ./node_modules/prisma
+COPY --from=build --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build --chown=node:node /app/dist ./dist
-# package.json must be present: its "type": "module" is what makes dist/*.js load as ES modules
 COPY --chown=node:node package.json ./
-# prisma/ and its config let this same image run `prisma migrate deploy`
 COPY --chown=node:node prisma ./prisma
 COPY --chown=node:node prisma.config.ts ./
 
@@ -47,4 +46,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 
-CMD ["node", "dist/server.js"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/server.js"]

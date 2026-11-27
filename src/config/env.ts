@@ -12,6 +12,8 @@ const schema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
   RATE_LIMIT_ENABLED : z.enum(['true', 'false']).default('true').transform((v) => v === 'true'),
   TRUST_PROXY_HOPS : z.coerce.number().int().min(0).default(0),
+  SMTP_USER : z.email().default("taskhub039@gmail.com"),
+  SMTP_PASS : z.string().default(''),
   SMTP_HOST : z.string().default('localhost'),
   SMTP_PORT : z.coerce.number().default(1025),
   MAIL_FROM : z.string().default("TaskHub <no-reply@taskhub.local>"),

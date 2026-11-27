@@ -4,23 +4,30 @@ import type { EmailMessage } from './emails.js';
 
 // Processors depend on this interface, so tests can pass a fake
 export interface Mailer {
-    send(message : EmailMessage) : Promise<void>;
+    send(message: EmailMessage): Promise<void>;
 }
 
-export function createSmtpMailer() : Mailer {
+export function createSmtpMailer(): Mailer {
     const transport = nodemailer.createTransport({
-        host : env.SMTP_HOST,
-        port : env.SMTP_PORT,
-        secure : false,
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        secure: env.SMTP_PORT === 465,
+        ...(env.SMTP_USER && env.SMTP_PASS
+            ? {
+                auth: {
+                    user: env.SMTP_USER,
+                    pass: env.SMTP_PASS,
+                },
+            }
+            : {}),
     });
-
     return {
         async send(message) {
             await transport.sendMail({
-                from : env.MAIL_FROM,
-                to : message.to,
-                subject : message.subject,
-                text : message.text
+                from: env.MAIL_FROM,
+                to: message.to,
+                subject: message.subject,
+                text: message.text
             });
         }
     }
